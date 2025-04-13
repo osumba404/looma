@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Looma | Quizes</title>
+    <title>Looma | Leaderboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="questions.php" class="nav-link active">
+            <a href="questions.php" class="nav-link">
                 <i class="fas fa-book"></i>
                 <span>Quizes</span>
             </a>
@@ -40,8 +40,8 @@
             <a href="referrals.php" class="nav-link">
                 <i class="fas fa-users"></i>
                 <span>Referrals</span>
-            </a>
-            <a href="achievements.php" class="nav-link">
+            </a>    
+            <a href="achievements.php" class="nav-link active">
                 <i class="fas fa-trophy"></i>
                 <span>Leaderboard</span>
             </a>
@@ -73,7 +73,9 @@
             </div>
         </div>
         
-       
+
+ 
+    
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
         <a href="#" class="mobile-nav-item active">
