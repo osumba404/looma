@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     <style>
-
     </style>
 </head>
 <body>
@@ -52,7 +51,7 @@
         </nav>
         
         <div class="sidebar-footer">
-            <p>&copy; 2025 Looma</p>
+            <p>© 2025 Looma</p>
         </div>
     </div>
     
@@ -68,31 +67,125 @@
                 <div class="user-avatar">EO</div>
                 <div>
                     <div class="fw-bold">Evans Osumba</div>
-                   
                 </div>
             </div>
         </div>
         
-       
+        <!-- Quiz Section -->
+        <section class="quiz-section py-4">
+            <div class="container">
+                <h2 class="mb-4">Available Quizzes</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">General Knowledge</h5>
+                                <p class="card-text">Test your knowledge across various topics!</p>
+                                <p class="card-text"><small>10 Questions • 5 Mins • 50 Points</small></p>
+                                <a href="#" class="btn btn-primary">Start Quiz</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Science Trivia</h5>
+                                <p class="card-text">Explore the wonders of science!</p>
+                                <p class="card-text"><small>15 Questions • 8 Mins • 75 Points</small></p>
+                                <a href="#" class="btn btn-primary">Start Quiz</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">History Challenge</h5>
+                                <p class="card-text">How well do you know history?</p>
+                                <p class="card-text"><small>12 Questions • 6 Mins • 60 Points</small></p>
+                                <a href="#" class="btn btn-primary">Start Quiz</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Recent Activity -->
+        <section class="recent-activity py-4">
+            <div class="container">
+                <h2 class="mb-4">Recent Activity</h2>
+                <div class="card">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Completed General Knowledge Quiz - 45/50 points</li>
+                        <li class="list-group-item">Earned 25 points from Daily Login Bonus</li>
+                        <li class="list-group-item">Referred a friend - 100 bonus points</li>
+                        <li class="list-group-item">Completed Science Trivia - 65/75 points</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Quick Stats -->
+        <section class="quick-stats py-4">
+            <div class="container">
+                <h2 class="mb-4">Your Stats</h2>
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>1250</h3>
+                                <p>Total Points</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>15</h3>
+                                <p>Quizzes Completed</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>3</h3>
+                                <p>Active Streaks</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3>#25</h3>
+                                <p>Leaderboard Rank</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
-        <a href="#" class="mobile-nav-item active">
+        <a href="index.php" class="mobile-nav-item">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="#" class="mobile-nav-item">
+        <a href="games.php" class="mobile-nav-item">
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="#" class="mobile-nav-item">
+        <a href="questions.php" class="mobile-nav-item active">
+            <i class="fas fa-book"></i>
+            <span>Quizzes</span>
+        </a>
+        <a href="wallet.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-users"></i>
-            <span>Refer</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
+        <a href="settings.php" class="mobile-nav-item">
             <i class="fas fa-user"></i>
             <span>Account</span>
         </a>
