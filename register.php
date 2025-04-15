@@ -8,17 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        
+    </style>
 </head>
 <body>
 <?php
 session_start();
-
-/* Redirect if already logged in
-if (isset($_SESSION['user_id'])) {
-    header('Location: wallet.php');
-    exit();
-}*/
 
 // Security headers
 header('X-Frame-Options: DENY');
@@ -156,9 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-    <header>
-        <h1>Welcome to Looma</h1>
-    </header>
     <main>
         <div class="form-card">
             <h2>Create Your Account</h2>
