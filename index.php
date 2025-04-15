@@ -25,6 +25,14 @@
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
+            <a href="about.php" class="nav-link">
+                <i class="fas fa-info-circle"></i>
+                <span>About us</span>
+            </a>
+            <a href="contact.php" class="nav-link">
+                <i class="fas fa-envelope"></i>
+                <span>Contact us</span>
+            </a>
             <a href="login.php" class="nav-link">
                 <i class="fas fa-sign-in-alt"></i>
                 <span>Log in</span>
