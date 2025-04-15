@@ -23,35 +23,11 @@
         <nav class="nav flex-column">
             <a href="index.php" class="nav-link active">
                 <i class="fas fa-home"></i>
-                <span>Dashboard</span>
+                <span>Home</span>
             </a>
-            <a href="games.php" class="nav-link">
-                <i class="fas fa-gamepad"></i>
-                <span>Games</span>
-            </a>
-            <a href="wallet.php" class="nav-link">
-                <i class="fas fa-chart-line"></i>
-                <span>Earnings</span>
-            </a>
-            <a href="withdraw.php" class="nav-link">
-                <i class="fas fa-wallet"></i>
-                <span>Withdraw</span>
-            </a>
-            <a href="referral.php" class="nav-link">
-                <i class="fas fa-users"></i>
-                <span>Referrals</span>
-            </a>
-            <!-- <a href="#" class="nav-link">
-                <i class="fas fa-bullhorn"></i>
-                <span>Promote</span>
-            </a> -->
-            <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i>
-                <span>Leaderboard</span>
-            </a>
-            <a href="settings.php" class="nav-link">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
+            <a href="login.php" class="nav-link">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Log in</span>
             </a>
         </nav>
         
@@ -67,14 +43,15 @@
             <button class="toggle-sidebar" id="toggleSidebar">
                 <i class="fas fa-bars"></i>
             </button>
-            
+            <a href=signup.php> 
             <div class="user-profile">
-                <div class="user-avatar">EO</div>
+                <i class="fas fa-user-plus"></i>
                 <div>
-                    <div class="fw-bold">Evans Osumba</div>
+                    <div class="fw-bold">Sign up</div>
                    
                 </div>
             </div>
+            </a>
         </div>
         
         <!-- Content Container -->

@@ -126,7 +126,7 @@ if (count($name_parts) >= 1) {
                 <i class="fas fa-book"></i>
                 <span>Quizes</span>
             </a>
-            <a href="wallet.php" class="nav-link">
+            <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
             </a>
@@ -141,6 +141,10 @@ if (count($name_parts) >= 1) {
             <a href="settings.php" class="nav-link">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
+            </a>
+            <a href="logout.php" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log out</span>
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -181,7 +185,7 @@ if (count($name_parts) >= 1) {
                         </div>
                         <div class="card-value"><?php echo htmlspecialchars($points); ?></div>
                         <div class="card-title">Points Earned</div>
-                        <a href="wallet.php" class="btn btn-sm btn-outline-primary">View History</a>
+                        <a href="wallet1.php" class="btn btn-sm btn-outline-primary">View History</a>
                     </div>
                 </div>
                 <div class="col-md-4 delay-1">
@@ -191,7 +195,7 @@ if (count($name_parts) >= 1) {
                         </div>
                         <div class="card-value">Ksh<?php echo htmlspecialchars($balance); ?></div>
                         <div class="card-title">Available Balance</div>
-                        <a href="wallet.php" class="btn btn-sm btn-outline-success">Withdraw Now</a>
+                        <a href="wallet1.php" class="btn btn-sm btn-outline-success">Withdraw Now</a>
                     </div>
                 </div>
                 <div class="col-md-4 delay-2">
@@ -279,7 +283,7 @@ if (count($name_parts) >= 1) {
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet.php" class="mobile-nav-item">
+        <a href="wallet1.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>

@@ -115,6 +115,10 @@ if (count($name_parts) >= 1) {
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </a>
+            <a href="logout.php" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log out</span>
+            </a>
         </nav>
         <div class="sidebar-footer">
             <p>© 2025 Looma</p>

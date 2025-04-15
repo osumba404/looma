@@ -95,7 +95,7 @@ if (count($name_parts) >= 1) {
             <p>Earn While You Play</p>
         </div>
         <nav class="nav flex-column">
-            <a href="index.php" class="nav-link">
+            <a href="index1.php" class="nav-link">
                 <i class="fas fa-home"></i>
                 <span>Dashboard</span>
             </a>
@@ -122,6 +122,10 @@ if (count($name_parts) >= 1) {
             <a href="settings.php" class="nav-link">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
+            </a>
+            <a href="logout.php" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log out</span>
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -213,7 +217,7 @@ if (count($name_parts) >= 1) {
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
-        <a href="index.php" class="mobile-nav-item">
+        <a href="index1.php" class="mobile-nav-item">
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
