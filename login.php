@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In - Looma</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="description" content="Login to Looma and explore rewards and games.">
+    <title>Login to Looma</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
@@ -12,99 +13,135 @@
 <body>
 <?php
 session_start();
+
+/* Redirect if already logged in
+if (isset($_SESSION['user_id'])) {
+    header('Location: wallet.php');
+    exit();
+}*/
+
+// Security headers
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+
 require_once 'includes/db.php';
 
 $alert = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $identifier = trim($_POST['identifier'] ?? '');
-    $password = $_POST['password'] ?? '';
+    // Sanitize inputs
+    $login_input = filter_input(INPUT_POST, 'login_input', FILTER_SANITIZE_STRING);
+    $password = $_POST['password'];
+    $remember_me = isset($_POST['remember-me']);
 
-    if (empty($identifier) || empty($password)) {
-        $alert = '<div class="alert alert-danger">Please fill in all fields.</div>';
-    } elseif (strlen($password) < 6) {
-        $alert = '<div class="alert alert-danger">Password must be at least 6 characters.</div>';
-    } else {
-        try {
-            $stmt = $conn->prepare('SELECT user_id, full_name, password, is_verified FROM users WHERE username = ? OR phone = ?');
-            $stmt->bind_param('ss', $identifier, $identifier);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $user = $result->fetch_assoc();
-            $stmt->close();
-
-            if ($user && password_verify($password, $user['password'])) {
-                if (!$user['is_verified']) {
-                    $alert = '<div class="alert alert-danger">Please verify your phone number.</div>';
-                } else {
-                    $_SESSION['user_id'] = $user['user_id'];
-                    $_SESSION['full_name'] = $user['full_name'];
-                    header('Location: wallet.php');
-                    exit;
-                }
-            } else {
-                $alert = '<div class="alert alert-danger">Invalid username/phone or password.</div>';
-            }
-        } catch (mysqli_sql_exception $e) {
-            $alert = '<div class="alert alert-danger">Server error: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    try {
+        // Normalize phone number if it starts with '0'
+        $normalized_input = $login_input;
+        if (preg_match('/^0[17]\d{8}$/', $login_input)) {
+            $normalized_input = '+254' . substr($login_input, 1);
         }
+
+        // Check if user exists
+        $stmt = $conn->prepare('SELECT user_id, full_name, username, phone, password FROM users WHERE username = ? OR phone = ?');
+        if ($stmt === false) {
+            throw new Exception('Prepare failed: ' . $conn->error);
+        }
+        $stmt->bind_param('ss', $login_input, $normalized_input);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+        $stmt->close();
+
+        if ($user) {
+            // Verify password
+            if (password_verify($password, $user['password'])) {
+                // Set session
+                $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['full_name'] = $user['full_name'];
+
+                // Handle Remember Me
+                if ($remember_me) {
+                    $token = bin2hex(random_bytes(16));
+                    setcookie('remember_me', $token, time() + (30 * 24 * 60 * 60), '/', '', true, true);
+                    // Note: Token not stored in DB (no token column)
+                }
+
+                header('Location: index1.php');
+                exit;
+            } else {
+                $alert = 'Invalid password.';
+            }
+        } else {
+            $alert = 'Username or phone not found.';
+        }
+    } catch (Exception $e) {
+        $alert = 'Error: ' . htmlspecialchars($e->getMessage());
     }
 }
 ?>
 
-    <div class="container">
+    <header>
+        <h1>Welcome to Looma</h1>
+    </header>
+    <main>
         <div class="form-card">
-            <h2>Welcome Back</h2>
-            <p class="text-center text-muted mb-4">Log in to continue earning rewards.</p>
-            <?php echo $alert; ?>
-            <form id="login-form" method="POST">
-                <input type="text" name="identifier" class="form-control" placeholder="Username or Phone" required>
-                <input type="password" name="password" class="form-control" placeholder="Password" required minlength="6">
-                <button type="submit" class="btn btn-primary" id="login-submit">
-                    Log In
-                    <span class="spinner spinner-border spinner-border-sm"></span>
+            <h2>Welcome Back!</h2>
+            <?php if ($alert): ?>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <?php echo htmlspecialchars($alert); ?>
+                </div>
+            <?php endif; ?>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="login_input">Username or Phone:</label>
+                    <i class="fas fa-user input-icon"></i>
+                    <input type="text" id="login_input" name="login_input" class="form-control" placeholder="Enter username or phone" required aria-label="Username or Phone" autocomplete="username">
+                </div>
+                <div class="form-group password-container">
+                    <label for="password">Password:</label>
+                    <i class="fas fa-lock input-icon"></i>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required aria-label="Password" autocomplete="current-password">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('password')" aria-label="Toggle password visibility">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="options-row">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember-me" name="remember-me">
+                        <label for="remember-me">Remember me</label>
+                    </div>
+                    <div class="forgot-password">
+                        <a href="forgot-password.php">Forgot Password?</a>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" aria-label="Login">
+                    <i class="fas fa-sign-in-alt"></i> Login
                 </button>
             </form>
-            <p class="text-center mt-3">
-                Don't have an account? <a href="register.php">Sign Up</a>
-            </p>
+            <div class="divider"><span>OR</span></div>
+            <p class="signup-link">Don't have an account? <a href="register.php">Sign Up</a></p>
         </div>
-    </div>
+    </main>
     <footer>
-        <p>© 2025 Looma. All rights reserved.</p>
-        <p><a href="index.php">Home</a> | <a href="register.php">Sign Up</a> | <a href="#">Terms</a> | <a href="#">Privacy</a></p>
+        <p>© <?php echo date('Y'); ?> Looma. All rights reserved.</p>
+        <p><a href="index.php">Home</a> | <a href="login.php">Login</a> | <a href="register.php">Sign Up</a> | <a href="terms.php">Terms</a> | <a href="privacy.php">Privacy</a></p>
     </footer>
     <script>
-        // Form Validation and Submission Handling
-        function showSpinner(button, show) {
-            const spinner = button.querySelector('.spinner');
-            if (show) {
-                button.disabled = true;
-                spinner.style.display = 'inline-block';
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+            const icon = toggle.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
             } else {
-                button.disabled = false;
-                spinner.style.display = 'none';
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
             }
         }
-
-        document.getElementById('login-form').addEventListener('submit', function(event) {
-            const identifier = document.querySelector('input[name="identifier"]').value;
-            const password = document.querySelector('input[name="password"]').value;
-            const button = document.getElementById('login-submit');
-
-            if (!identifier || !password) {
-                event.preventDefault();
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-danger';
-                alert.textContent = 'Please fill in all fields.';
-                document.querySelector('.form-card').prepend(alert);
-                setTimeout(() => alert.remove(), 5000);
-                return;
-            }
-
-            showSpinner(button, true);
-            setTimeout(() => showSpinner(button, false), 1000);
-        });
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Looma | Referrals</title>
+    <title>Looma | Earnings</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -30,10 +30,9 @@ require_once 'includes/db.php';
 
 $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'];
-$error = '';
 
 try {
-    // Fetch user data and referral code
+    // Fetch user data
     $stmt = $conn->prepare('SELECT full_name, username, referral_code FROM users WHERE user_id = ?');
     if ($stmt === false) {
         throw new Exception('Prepare failed: ' . $conn->error);
@@ -41,6 +40,17 @@ try {
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
     $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    // Fetch wallet balance
+    $stmt = $conn->prepare('SELECT balance FROM wallet WHERE user_id = ?');
+    if ($stmt === false) {
+        throw new Exception('Prepare failed: ' . $conn->error);
+    }
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $wallet = $stmt->get_result()->fetch_assoc();
+    $balance = $wallet ? number_format($wallet['balance'], 2) : '0.00';
     $stmt->close();
 
     // Count referrals
@@ -53,15 +63,8 @@ try {
     $referral_count = $stmt->get_result()->fetch_assoc()['referral_count'];
     $stmt->close();
 
-    // Fetch referred users
-    $stmt = $conn->prepare('SELECT full_name, username, created_at FROM users WHERE referred_by = ? ORDER BY created_at DESC');
-    if ($stmt === false) {
-        throw new Exception('Prepare failed: ' . $conn->error);
-    }
-    $stmt->bind_param('s', $user['referral_code']);
-    $stmt->execute();
-    $referred_users = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
+    // Points (placeholder, no table)
+    $points = 0; // Update if points table is added
 } catch (Exception $e) {
     $error = 'Error: ' . htmlspecialchars($e->getMessage());
 }
@@ -75,9 +78,6 @@ if (count($name_parts) >= 1) {
         $initials .= strtoupper(substr($name_parts[1], 0, 1));
     }
 }
-
-// Referral link
-$referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($user['referral_code']);
 ?>
 
     <!-- Desktop Sidebar -->
@@ -99,11 +99,11 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
                 <i class="fas fa-book"></i>
                 <span>Quizes</span>
             </a>
-            <a href="wallet1.php" class="nav-link">
+            <a href="wallet1.php" class="nav-link active">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
             </a>
-            <a href="referrals.php" class="nav-link active">
+            <a href="referrals.php" class="nav-link">
                 <i class="fas fa-users"></i>
                 <span>Referrals</span>
             </a>
@@ -138,14 +138,34 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
 
         <!-- Content Container -->
         <div class="content-container">
-            <?php if ($error): ?>
+            <?php if (isset($error)): ?>
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
                     <?php echo $error; ?>
                 </div>
             <?php endif; ?>
-            <!-- Referral Stats -->
+            <!-- Wallet Stats -->
             <div class="row animate-fadeIn">
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <div class="card-icon primary">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="card-value"><?php echo htmlspecialchars($points); ?></div>
+                        <div class="card-title">Points Earned</div>
+                        <a href="#" class="btn btn-sm btn-outline-primary">View History</a>
+                    </div>
+                </div>
+                <div class="col-md-4 delay-1">
+                    <div class="dashboard-card">
+                        <div class="card-icon success">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="card-value">Ksh<?php echo htmlspecialchars($balance); ?></div>
+                        <div class="card-title">Available Balance</div>
+                        <a href="#" class="btn btn-sm btn-outline-success">Withdraw Now</a>
+                    </div>
+                </div>
                 <div class="col-md-4 delay-2">
                     <div class="dashboard-card">
                         <div class="card-icon accent">
@@ -153,51 +173,32 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
                         </div>
                         <div class="card-value"><?php echo htmlspecialchars($referral_count); ?></div>
                         <div class="card-title">Referrals</div>
-                        <button class="btn btn-sm btn-outline-danger" onclick="copyReferralLink()">Invite Friends</button>
+                        <a href="referrals.php" class="btn btn-sm btn-outline-danger">Invite Friends</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Referral Link Section -->
+            <!-- Wallet Overview -->
             <div class="card mt-4 animate-fadeIn">
                 <div class="card-body">
-                    <h3 class="card-title">Your Referral Link</h3>
-                    <p>Share this link with friends to earn rewards when they join Looma!</p>
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" id="referral-link" value="<?php echo htmlspecialchars($referral_link); ?>" readonly>
-                        <button class="btn btn-primary" onclick="copyReferralLink()" aria-label="Copy referral link">
-                            <i class="fas fa-copy"></i> Copy
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Referred Users Table -->
-            <div class="card mt-4 animate-fadeIn">
-                <div class="card-body">
-                    <h3 class="card-title">Your Referrals</h3>
-                    <?php if (empty($referred_users)): ?>
-                        <p>You haven't referred anyone yet. Start sharing your link!</p>
-                    <?php else: ?>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Username</th>
-                                    <th>Joined</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($referred_users as $referred): ?>
-                                    <tr>
-                                        <td><?php echo htmlspecialchars($referred['full_name']); ?></td>
-                                        <td><?php echo htmlspecialchars($referred['username']); ?></td>
-                                        <td><?php echo date('M d, Y', strtotime($referred['created_at'])); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
+                    <h3 class="card-title">Wallet Overview</h3>
+                    <p>Your current balance is <strong>Ksh<?php echo htmlspecialchars($balance); ?></strong>. Below is a summary of your recent transactions.</p>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center">No transactions yet.</td>
+                            </tr>
+                            <!-- Add transaction data when table exists -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -213,11 +214,11 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item">
+        <a href="wallet1.php" class="mobile-nav-item active">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
-        <a href="referrals.php" class="mobile-nav-item active">
+        <a href="referrals.php" class="mobile-nav-item">
             <i class="fas fa-users"></i>
             <span>Refer</span>
         </a>
@@ -260,23 +261,6 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
         animateElements.forEach(element => {
             observer.observe(element);
         });
-
-        // Copy referral link
-        function copyReferralLink() {
-            const linkInput = document.getElementById('referral-link');
-            linkInput.select();
-            try {
-                document.execCommand('copy');
-                const btn = document.querySelector('.btn-primary');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                }, 2000);
-            } catch (err) {
-                alert('Failed to copy link.');
-            }
-        }
     </script>
 </body>
 </html>

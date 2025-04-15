@@ -1,15 +1,18 @@
 # Looma
 
-A dynamic web platform where users can register, verify their phone, pay an activation fee via M-Pesa, play games to earn points, and withdraw earnings. Built with PHP, MySQL, Bootstrap, and JavaScript, featuring a modern and professional front-end design.
+A dynamic web platform where users can register, verify their phone, pay an activation fee via M-Pesa, play games to earn points, and withdraw earnings. Built with PHP, MySQL, Bootstrap, and JavaScript, featuring a modern, responsive, and professional front-end design.
 
 ## Features
-- **User Registration**: Sign up with full name, username, phone, email (optional), and password.
+- **User Registration**: Sign up with full name, username, phone, email (optional), password, and unique referral code.
 - **Phone Verification**: Receive and verify a 6-digit SMS code (Africa’s Talking API).
 - **M-Pesa Payment**: Pay activation fee via M-Pesa STK Push (Daraja API).
 - **Account Activation**: Activate account post-payment.
 - **Login System**: Log in with username or phone.
-- **Landing Page**: Enticing hero, features, how-it-works, and trust sections.
-- **Modern UI**: Gradient buttons, Inter font, animations, and responsive design.
+- **Dashboard**: Displays logged-in user’s points, wallet balance, referrals, and recent activities.
+- **Password Management**: Update password with strong validation (8+ characters, uppercase, number, special character).
+- **Referrals**: Share referral link, track referred users, and view referral count.
+- **Achievements**: View user achievements and leaderboard rankings (top 10 by points).
+- **Modern UI**: Bootstrap 5, Font Awesome, Poppins font, gradient buttons, animations, and mobile-friendly sidebar/bottom nav.
 
 ## Tech Stack
 - **Backend**: PHP, MySQL
@@ -17,11 +20,11 @@ A dynamic web platform where users can register, verify their phone, pay an acti
 - **APIs**:
   - Africa’s Talking SMS (sandbox for testing)
   - M-Pesa Daraja (STK Push, sandbox)
-- **Database**: MySQL (users, wallet, transactions, verification_codes)
+- **Database**: MySQL (users, wallet, transactions, verification_codes; optional: points)
 
 ## Project Structure
 ```
-promotional-website/
+looma/
 ├── api/
 │   ├── register.php           # User registration
 │   ├── login.php             # User login
@@ -37,12 +40,17 @@ promotional-website/
 ├── includes/
 │   ├── db.php                # Database connection
 │   ├── mpesa.php             # M-Pesa API helper
-├── index.php                 # Landing page
+├── index.php                 # User dashboard (points, balance, referrals, activities)
 ├── register.php              # Registration form
 ├── login.php                 # Login form
 ├── verify.php                # Phone verification form
 ├── payment.php               # Payment initiation
-├── wallet.php                # Post-activation dashboard (placeholder)
+├── settings.php              # Password update
+├── referrals.php             # Referral link and referred users
+├── achievements.php          # Achievements and leaderboard
+├── wallet.php                # Earnings dashboard (placeholder)
+├── games.php                 # Games page (placeholder)
+├── questions.php             # Quizes page (placeholder)
 ├── README.md
 ```
 
@@ -57,11 +65,11 @@ promotional-website/
 1. **Clone the Repository**:
    ```bash
    git clone https://github.com/galaxie-dev/affiliate-mkt.git
-   cd promotional-website
+   cd looma
    ```
 
 2. **Configure Database**:
-   - Create a MySQL database (`promotional_website`).
+   - Create a MySQL database (`looma`).
    - Import the schema:
      ```sql
      CREATE TABLE users (
@@ -72,9 +80,11 @@ promotional-website/
          email VARCHAR(100),
          password VARCHAR(255) NOT NULL,
          referral_code VARCHAR(8) UNIQUE,
+         referred_by VARCHAR(8),
          is_verified BOOLEAN DEFAULT FALSE,
          is_activated BOOLEAN DEFAULT FALSE,
-         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         FOREIGN KEY (referred_by) REFERENCES users(referral_code)
      );
 
      CREATE TABLE wallet (
@@ -88,6 +98,7 @@ promotional-website/
          transaction_id INT AUTO_INCREMENT PRIMARY KEY,
          user_id INT,
          amount DECIMAL(10,2) NOT NULL,
+         description VARCHAR(255),
          type ENUM('deposit', 'withdrawal') NOT NULL,
          status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
          mpesa_code VARCHAR(50),
@@ -104,11 +115,19 @@ promotional-website/
          expires_at TIMESTAMP NOT NULL,
          FOREIGN KEY (user_id) REFERENCES users(user_id)
      );
+
+     -- Optional: For points tracking
+     CREATE TABLE points (
+         point_id INT AUTO_INCREMENT PRIMARY KEY,
+         user_id INT,
+         points INT DEFAULT 0,
+         FOREIGN KEY (user_id) REFERENCES users(user_id)
+     );
      ```
-   - Update `includes/db.php` with your database credentials:
+   - Update `includes/db.php` with your credentials:
      ```php
      $host = 'localhost';
-     $db = 'promotional_website';
+     $db = 'looma';
      $user = 'your_db_user';
      $pass = 'your_db_password';
      ```
@@ -116,7 +135,7 @@ promotional-website/
 3. **Configure APIs**:
    - **Africa’s Talking**:
      - Get sandbox credentials.
-     - Update `api/register.php` with your API key and username.
+     - Update `api/register.php` with API key and username.
    - **M-Pesa Daraja**:
      - Get sandbox credentials (consumer key, secret, shortcode, passkey).
      - Update `includes/mpesa.php` with credentials and callback URL.
@@ -128,15 +147,20 @@ promotional-website/
 
 5. **Access the Site**:
    - Open `http://localhost:8000/index.php`.
-   - Register, verify phone, pay, or log in.
+   - Register, verify phone, pay, log in, or access dashboard.
 
 ## Usage
-- **Landing Page**: `index.php` welcomes users with a hero, features, and steps.
-- **Register**: `register.php` → enter details → receive SMS code.
-- **Verify**: `verify.php` → enter code → proceed to payment.
-- **Pay**: `payment.php` → initiate M-Pesa STK Push → activate account.
-- **Login**: `login.php` → access `wallet.php` (dashboard stub).
-- **Wallet**: `wallet.php` (placeholder for future features like games).
+- **Dashboard** (`index.php`): View points (defaults to 0 if `points` table missing), wallet balance, referral count, and recent transactions (empty if `transactions` table missing).
+- **Register** (`register.php`): Enter details → receive SMS code.
+- **Verify** (`verify.php`): Enter code → proceed to payment.
+- **Pay** (`payment.php`): Initiate M-Pesa STK Push → activate account.
+- **Login** (`login.php`): Access dashboard.
+- **Settings** (`settings.php`): Update password with strong validation.
+- **Referrals** (`referrals.php`): Copy referral link, view referred users’ names, usernames, and join dates.
+- **Achievements** (`achievements.php`): View earned achievements and top 10 leaderboard (requires `points` table).
+- **Wallet** (`wallet.php`): Placeholder for earnings overview.
+- **Games** (`games.php`): Placeholder for gameplay.
+- **Quizes** (`questions.php`): Placeholder for quizzes.
 
 ## Testing
 - **APIs**:
@@ -148,21 +172,30 @@ promotional-website/
 - **Front-End**:
   - Navigate to `http://localhost:8000/register.php`.
   - Use DevTools (Network tab) to verify JSON responses.
+  - Test dashboard (`index.php`) after login to confirm user details, stats, and no errors.
 - **Sandbox**:
   - Test SMS with Africa’s Talking sandbox.
   - Simulate M-Pesa payments with Daraja sandbox.
 
 ## Known Issues
-- Non-JSON responses (e.g., HTML errors) may occur if:
+- **Missing Tables**:
+  - `points`: Defaults to 0 points if missing. Create table for tracking.
+  - `transactions`: Shows “No recent activity” if missing. Create for activity logs.
+- Non-JSON responses may occur if:
   - `includes/db.php` credentials are incorrect.
   - API files are misplaced.
   - PHP isn’t executing (check server logs).
+- `games.php` and `questions.php` are placeholders (no functionality).
 
 ## Future Enhancements
-- Build `games/trivia.php` for gameplay.
-- Enhance `wallet.php` with balance and withdrawal UI.
-- Add CSRF tokens for security.
+- Implement `games.php` for gameplay mechanics.
+- Build `questions.php` for quiz functionality.
+- Enhance `wallet.php` with balance, withdrawal UI, and transaction history.
+- Add `withdraw.php` for M-Pesa withdrawals.
+- Implement `logout.php` to clear sessions.
+- Add CSRF tokens for form security.
 - Style `verify.php` and `payment.php` to match `register.php` and `login.php`.
+- Add achievements table for `achievements.php` full functionality.
 
 ## Contributing
 1. Fork the repo.
