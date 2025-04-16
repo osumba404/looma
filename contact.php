@@ -72,19 +72,13 @@
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a href="signup.php"> 
                 <div class="user-profile">
-                    <i class="fas fa-user-plus"></i>
+                   
                     <div>
-                        <div class="fw-bold">Sign up</div>
+                        <div class="fw-bold">LOOMA</div>
                     </div>
                 </div>
-            </a>
         </div>
-
         <!-- Contact Section -->
         <div class="container contact-section">
             <div class="contact-header">
@@ -119,29 +113,26 @@
         </div>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav">
-        <a href="#" class="mobile-nav-item active">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-gamepad"></i>
-            <span>Games</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>Earnings</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-users"></i>
-            <span>Refer</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-user"></i>
-            <span>Account</span>
-        </a>
-    </div>
+<!-- Mobile Bottom Navigation -->
+<div class="mobile-bottom-nav">
+    <a href="index.php" class="mobile-nav-item">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </a>
+    <a href="about.php" class="mobile-nav-item">
+        <i class="fas fa-info-circle"></i> <!-- Updated to info icon -->
+        <span>About</span>
+    </a>
+    <a href="contact.php" class="mobile-nav-item active">
+        <i class="fas fa-envelope"></i> <!-- Updated to contact/envelope icon -->
+        <span>Contact</span>
+    </a>
+    <a href="login.php" class="mobile-nav-item">
+        <i class="fas fa-sign-in-alt"></i> <!-- Updated to login icon -->
+        <span>Log in</span>
+    </a>
+</div>
+
 
     <script>
         // Toggle sidebar

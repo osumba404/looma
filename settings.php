@@ -136,20 +136,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+           <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars(substr($user['full_name'], 0, 2)); ?></div>
                 <div>
-                    <div class="fw-bold"><?php echo htmlspecialchars($user['full_name']); ?></div>
+                    <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
         </div>
 
         <!-- Settings Content -->
         <div class="container">
-            <h2 class="mb-4">Settings</h2>
+         
             <ul class="nav nav-tabs">
                 <li class="nav-item">
                     <a class="nav-link active" data-bs-toggle="tab" href="#account">Account</a>
@@ -191,7 +189,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             </div>
         </div>
     </div>
-
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item">
@@ -214,8 +211,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
             <i class="fas fa-user"></i>
             <span>Account</span>
         </a>
+        <a href="logout.php" class="mobile-nav-item">
+        <i class="fas fa-sign-out-alt"></i> 
+        <span>Log out</span>
+    </a>
     </div>
-
     <script>
         // Toggle sidebar
         document.getElementById('toggleSidebar').addEventListener('click', function() {

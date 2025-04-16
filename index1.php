@@ -156,15 +156,14 @@ if (count($name_parts) >= 1) {
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+        <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
-                    <div class="fw-bold"><?php echo htmlspecialchars($user['full_name']); ?></div>
+                    <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
+            
         </div>
 
         <!-- Content Container -->
@@ -247,32 +246,6 @@ if (count($name_parts) >= 1) {
                 </div>
             </div>
 
-            <!-- Quick Links Section -->
-            <div class="card mt-4 animate-fadeIn">
-                <div class="card-body">
-                    <h3 class="card-title">Quick Links</h3>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <a href="games.php" class="btn btn-primary w-100">
-                                <i class="fas fa-gamepad"></i> Play Games
-                            </a>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="referrals.php" class="btn btn-primary w-100">
-                                <i class="fas fa-users"></i> Invite Friends
-                            </a>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <a href="wallet1.php" class="btn btn-primary w-100">
-                                <i class="fas fa-wallet"></i> View Earnings
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item active">
@@ -295,6 +268,10 @@ if (count($name_parts) >= 1) {
             <i class="fas fa-user"></i>
             <span>Account</span>
         </a>
+        <a href="logout.php" class="mobile-nav-item">
+        <i class="fas fa-sign-out-alt"></i> 
+        <span>Log out</span>
+    </a>
     </div>
 
     <script>

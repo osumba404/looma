@@ -48,56 +48,16 @@
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a href=signup.php> 
-            <div class="user-profile">
-                <i class="fas fa-user-plus"></i>
-                <div>
-                    <div class="fw-bold">Sign up</div>
+                <div class="user-profile">
                    
+                    <div>
+                        <div class="fw-bold">LOOMA</div>
+                    </div>
                 </div>
-            </div>
-            </a>
         </div>
-        
         <!-- Content Container -->
         <div class="content-container">
-            <!-- Dashboard Stats -->
-            <div class="row animate-fadeIn">
-                <div class="col-md-4">
-                    <div class="dashboard-card">
-                        <div class="card-icon primary">
-                            <i class="fas fa-coins"></i>
-                        </div>
-                        <div class="card-value">5,280</div>
-                        <div class="card-title">Points Earned</div>
-                        <a href="#" class="btn btn-sm btn-outline-primary">View History</a>
-                    </div>
-                </div>
-                <div class="col-md-4 delay-1">
-                    <div class="dashboard-card">
-                        <div class="card-icon success">
-                            <i class="fas fa-wallet"></i>
-                        </div>
-                        <div class="card-value">Ksh1,500.00</div>
-                        <div class="card-title">Available Balance</div>
-                        <a href="#" class="btn btn-sm btn-outline-success">Withdraw Now</a>
-                    </div>
-                </div>
-                <div class="col-md-4 delay-2">
-                    <div class="dashboard-card">
-                        <div class="card-icon accent">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="card-value">24</div>
-                        <div class="card-title">Referrals</div>
-                        <a href="#" class="btn btn-sm btn-outline-danger">Invite Friends</a>
-                    </div>
-                </div>
-            </div>
-            
+
             <!-- Hero Section -->
             <div class="hero-section animate-fadeIn delay-1">
                 <h1 class="hero-title">Earn Money Playing Games!</h1>
@@ -259,29 +219,26 @@
         </div>
     </div>
     
-    <!-- Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav">
-        <a href="#" class="mobile-nav-item active">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-gamepad"></i>
-            <span>Games</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>Earnings</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-users"></i>
-            <span>Refer</span>
-        </a>
-        <a href="#" class="mobile-nav-item">
-            <i class="fas fa-user"></i>
-            <span>Account</span>
-        </a>
-    </div>
+<!-- Mobile Bottom Navigation -->
+<div class="mobile-bottom-nav">
+    <a href="index.php" class="mobile-nav-item active">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+    </a>
+    <a href="about.php" class="mobile-nav-item">
+        <i class="fas fa-info-circle"></i> <!-- Updated to info icon -->
+        <span>About</span>
+    </a>
+    <a href="contact.php" class="mobile-nav-item">
+        <i class="fas fa-envelope"></i> <!-- Updated to contact/envelope icon -->
+        <span>Contact</span>
+    </a>
+    <a href="login.php" class="mobile-nav-item">
+        <i class="fas fa-sign-in-alt"></i> <!-- Updated to login icon -->
+        <span>Log in</span>
+    </a>
+</div>
+
     
     <script>
         // Toggle sidebar

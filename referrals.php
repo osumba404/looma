@@ -129,15 +129,14 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+        <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
-                    <div class="fw-bold"><?php echo htmlspecialchars($user['full_name']); ?></div>
+                    <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
+            
         </div>
 
         <!-- Content Container -->
@@ -207,8 +206,8 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
         </div>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav">
+     <!-- Mobile Bottom Navigation -->
+     <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item">
             <i class="fas fa-home"></i>
             <span>Home</span>
@@ -229,8 +228,11 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
             <i class="fas fa-user"></i>
             <span>Account</span>
         </a>
+        <a href="logout.php" class="mobile-nav-item">
+        <i class="fas fa-sign-out-alt"></i> 
+        <span>Log out</span>
+    </a>
     </div>
-
     <script>
         // Toggle sidebar
         document.getElementById('toggleSidebar').addEventListener('click', function() {

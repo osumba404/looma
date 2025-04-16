@@ -129,15 +129,14 @@ if (count($name_parts) >= 1) {
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+        <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
-                    <div class="fw-bold"><?php echo htmlspecialchars($user['full_name']); ?></div>
+                    <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
+            
         </div>
 
         <!-- Content Container -->
@@ -148,6 +147,7 @@ if (count($name_parts) >= 1) {
                     <?php echo $error; ?>
                 </div>
             <?php endif; ?>
+
             <!-- Wallet Stats -->
             <div class="row animate-fadeIn">
                 <div class="col-md-4">
@@ -230,6 +230,10 @@ if (count($name_parts) >= 1) {
             <i class="fas fa-user"></i>
             <span>Account</span>
         </a>
+        <a href="logout.php" class="mobile-nav-item">
+        <i class="fas fa-sign-out-alt"></i> 
+        <span>Log out</span>
+    </a>
     </div>
 
     <script>
