@@ -9,74 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
 
-        .sidebar {
-            width: 250px;
-            height: 100vh;
-            background-color: #343a40;
-            color: white;
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 20px;
-        }
-
-        .sidebar-brand h2 {
-            font-weight: 700;
-        }
-
-        .nav-link {
-            color: white;
-            margin: 10px 0;
-        }
-
-        .nav-link.active {
-            background-color: #0d6efd;
-            border-radius: 5px;
-        }
-
-        .main-content {
-            margin-left: 250px;
-            transition: margin-left 0.3s;
-        }
-
-        .main-content-expanded {
-            margin-left: 0;
-        }
-
-        .top-navbar {
-            background-color: #f8f9fa;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-        }
-
-
-
-        @media (max-width: 991.98px) {
-            .sidebar {
-                display: none;
-            }
-
-            .mobile-bottom-nav {
-                display: flex;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-        }
     </style>
 </head>
 <body>
@@ -107,7 +40,7 @@
         </nav>
         
         <div class="sidebar-footer">
-            <p>&copy; 2025 Looma</p>
+            <p>© 2025 Looma</p>
         </div>
     </div>
     
@@ -122,88 +55,91 @@
                     </div>
                 </div>
         </div>
-
         <!-- About Content -->
-        <div class="container py-5">
-            <h2 class="mb-4 text-primary fw-bold">About Looma</h2>
-            <p class="lead">
-                Looma is a unique platform that blends fun and rewards — allowing users to earn while they play. Our mission is to empower users by providing interactive games, quizzes, and referral opportunities that pay real money.
-            </p>
-
-            <div class="row mt-5">
-                <div class="col-md-6">
-                    <h4>🎯 Our Mission</h4>
-                    <p>
-                        To create an engaging digital environment where entertainment meets opportunity. We strive to make earning fun, accessible, and rewarding for everyone.
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <h4>🌟 Why Choose Looma?</h4>
-                    <ul>
-                        <li>✅ Simple and fun user interface</li>
-                        <li>✅ Real-time earnings through games</li>
-                        <li>✅ M-Pesa integration for fast payouts</li>
-                        <li>✅ Community-focused with referral bonuses</li>
-                        <li>✅ Safe and secure user transactions</li>
-                        <li>✅ Regular updates with exciting features</li>
-                    </ul>
+        <div class="content-container">
+            <!-- Introduction -->
+            <div class="card mt-4 animate-fadeIn">
+                <div class="card-body">
+                    <h3 class="card-title">About Looma</h3>
+                    <p>Looma is a vibrant platform where fun meets opportunity. We empower users to earn real rewards by playing engaging games, participating in quizzes, and inviting friends. Based in Nairobi, Kenya, Looma is designed to make every moment you spend with us both entertaining and rewarding.</p>
                 </div>
             </div>
 
-            <div class="row mt-5">
-                <div class="col-md-6">
-                    <h4>🚀 Our Vision</h4>
-                    <p>
-                        To become Africa's leading gamified earning platform by connecting people through play and digital rewards. We envision a future where everyone has equal access to fun and financial growth.
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <h4>👥 Meet The Team</h4>
-                    <p>
-                        Looma is powered by a passionate team of developers, designers, and digital innovators from Kenya who believe in the future of fun-based earning. We’re committed to continuous improvement and user satisfaction.
-                    </p>
+            <!-- Our Mission -->
+            <div class="card mt-4 animate-fadeIn">
+                <div class="card-body">
+                    <h3 class="card-title">Our Mission</h3>
+                    <p>Our mission is to redefine online entertainment by combining the thrill of gaming with the joy of earning. We strive to create a seamless, secure, and inclusive platform where everyone can play, earn, and grow, all while having fun.</p>
                 </div>
             </div>
 
-            <div class="mt-5">
-                <h4>✨ What Looma Offers</h4>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
-                                <i class="fas fa-puzzle-piece fa-2x text-primary mb-3"></i>
-                                <h5 class="card-title">Fun & Interactive Games</h5>
-                                <p class="card-text">Engage with games that challenge your brain while you earn coins and real money.</p>
+            <!-- Our Story -->
+            <div class="card mt-4 animate-fadeIn">
+                <div class="card-body">
+                    <h3 class="card-title">Our Story</h3>
+                    <p>Founded in 2024, Looma was born out of a vision to make online earning accessible and enjoyable. Starting as a small team passionate about gaming and technology, we’ve grown into a platform trusted by thousands. With innovations like instant M-Pesa withdrawals and a robust referral system, we’re committed to delivering value to our community.</p>
+                </div>
+            </div>
+
+            <!-- Our Values -->
+            <div class="card mt-4 animate-fadeIn">
+                <div class="card-body">
+                    <h3 class="card-title">Our Values</h3>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="value-item">
+                                <i class="fas fa-star fa-2x mb-2"></i>
+                                <h5>Fun</h5>
+                                <p>We believe earning should be as enjoyable as playing your favorite game.</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
-                                <i class="fas fa-bolt fa-2x text-primary mb-3"></i>
-                                <h5 class="card-title">Instant Payouts</h5>
-                                <p class="card-text">Withdraw your earnings instantly via M-Pesa – safe, secure, and quick!</p>
+                        <div class="col-md-4 mb-3">
+                            <div class="value-item">
+                                <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                                <h5>Trust</h5>
+                                <p>Your security and satisfaction are our top priorities, always.</p>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-body">
-                                <i class="fas fa-users fa-2x text-primary mb-3"></i>
-                                <h5 class="card-title">Community & Referrals</h5>
-                                <p class="card-text">Invite friends and grow together. Enjoy referral bonuses and special rewards!</p>
+                        <div class="col-md-4 mb-3">
+                            <div class="value-item">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h5>Community</h5>
+                                <p>We grow together, rewarding every member of our vibrant community.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-5">
-                <h4>🤝 Join Us Today</h4>
-                <p>
-                    Whether you're here to enjoy fun games or make extra income, Looma has something for everyone. Join our growing community and turn your free time into earning time.
-                </p>
-                
+            <!-- Meet the Team -->
+            <div class="card mt-4 animate-fadeIn">
+                <div class="card-body">
+                    <h3 class="card-title">Meet the Team</h3>
+                    <p>Our team is a blend of creative minds, tech enthusiasts, and gaming lovers dedicated to making Looma the best it can be.</p>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="team-member">
+                                <div class="team-avatar bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px; font-size: 2rem;">JD</div>
+                                <h5 class="mt-2">John Doe</h5>
+                                <p>Founder & CEO</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="team-member">
+                                <div class="team-avatar bg-success text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px; font-size: 2rem;">JS</div>
+                                <h5 class="mt-2">Jane Smith</h5>
+                                <p>Lead Developer</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="team-member">
+                                <div class="team-avatar bg-accent text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 80px; height: 80px; font-size: 2rem;">AK</div>
+                                <h5 class="mt-2">Alex Kimani</h5>
+                                <p>Community Manager</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -223,7 +159,7 @@
         <span>Contact</span>
     </a>
     <a href="login.php" class="mobile-nav-item">
-        <i class="fas fa-sign-in-alt"></i> <!-- Updated to login icon -->
+        <i class="fas fa-sign-in-alt"></i> 
         <span>Log in</span>
     </a>
 </div>
@@ -248,6 +184,21 @@
         
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
+        
+        // Add animation classes as elements come into view
+        const animateElements = document.querySelectorAll('.animate-fadeIn');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fadeIn');
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        animateElements.forEach(element => {
+            observer.observe(element);
+        });
     </script>
 </body>
 </html>

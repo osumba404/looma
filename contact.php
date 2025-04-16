@@ -34,6 +34,26 @@
         .contact-form input, .contact-form textarea {
             margin-bottom: 1rem;
         }
+
+        .contact-info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .contact-info-item i {
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            color: #007bff;
+        }
+
+        .contact-form .btn-primary {
+            transition: background-color 0.3s ease;
+        }
+
+        .contact-form .btn-primary:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -64,7 +84,7 @@
         </nav>
         
         <div class="sidebar-footer">
-            <p>&copy; 2025 Looma</p>
+            <p>© 2025 Looma</p>
         </div>
     </div>
     
@@ -81,31 +101,68 @@
         </div>
         <!-- Contact Section -->
         <div class="container contact-section">
-            <div class="contact-header">
+            <div class="contact-header animate-fadeIn">
                 <h1>Contact Us</h1>
-                <p>Have any questions or suggestions? We'd love to hear from you.</p>
+                <p>Got questions, ideas, or need support? Reach out, and let’s make your Looma experience even better!</p>
             </div>
             <div class="row g-4">
                 <div class="col-lg-6">
-                    <div class="contact-info">
-                        <h5><i class="fas fa-map-marker-alt"></i> Office Address</h5>
-                        <p>Nairobi, Kenya</p>
-
-                        <h5><i class="fas fa-phone"></i> Phone</h5>
-                        <p>+254 700 000 000</p>
-
-                        <h5><i class="fas fa-envelope"></i> Email</h5>
-                        <p>support@looma.co.ke</p>
+                    <div class="contact-info animate-fadeIn">
+                        <h3 class="mb-4">Get in Touch</h3>
+                        <div class="contact-info-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>
+                                <h5>Office Address</h5>
+                                <p>Westlands, Nairobi, Kenya</p>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <h5>Phone</h5>
+                                <p><a href="tel:+254700000000">+254 700 000 000</a></p>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <h5>Email</h5>
+                                <p><a href="mailto:support@looma.co.ke">support@looma.co.ke</a></p>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <h5>Support Hours</h5>
+                                <p>Monday - Friday: 8 AM - 6 PM</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <div class="contact-form">
-                        <h5>Send a Message</h5>
-                        <form>
-                            <input type="text" class="form-control" placeholder="Your Name" required>
-                            <input type="email" class="form-control" placeholder="Your Email" required>
-                            <textarea class="form-control" rows="4" placeholder="Your Message" required></textarea>
-                            <button type="submit" class="btn btn-primary w-100">Send Message</button>
+                    <div class="contact-form animate-fadeIn">
+                        <h3 class="mb-4">Send Us a Message</h3>
+                        <form id="contact-form">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Your Name</label>
+                                <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Your Email</label>
+                                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject</label>
+                                <input type="text" class="form-control" id="subject" placeholder="What’s this about?" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="message" class="form-label">Your Message</label>
+                                <textarea class="form-control" id="message" rows="5" placeholder="Tell us more..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100" id="contact-submit">
+                                Send Message
+                                <span class="spinner spinner-border spinner-border-sm" style="display: none;"></span>
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -113,26 +170,25 @@
         </div>
     </div>
 
-<!-- Mobile Bottom Navigation -->
-<div class="mobile-bottom-nav">
-    <a href="index.php" class="mobile-nav-item">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-    </a>
-    <a href="about.php" class="mobile-nav-item">
-        <i class="fas fa-info-circle"></i> <!-- Updated to info icon -->
-        <span>About</span>
-    </a>
-    <a href="contact.php" class="mobile-nav-item active">
-        <i class="fas fa-envelope"></i> <!-- Updated to contact/envelope icon -->
-        <span>Contact</span>
-    </a>
-    <a href="login.php" class="mobile-nav-item">
-        <i class="fas fa-sign-in-alt"></i> <!-- Updated to login icon -->
-        <span>Log in</span>
-    </a>
-</div>
-
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <a href="index.php" class="mobile-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="about.php" class="mobile-nav-item">
+            <i class="fas fa-info-circle"></i>
+            <span>About</span>
+        </a>
+        <a href="contact.php" class="mobile-nav-item active">
+            <i class="fas fa-envelope"></i>
+            <span>Contact</span>
+        </a>
+        <a href="login.php" class="mobile-nav-item">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Log in</span>
+        </a>
+    </div>
 
     <script>
         // Toggle sidebar
@@ -156,7 +212,6 @@
 
         // Add animation classes as elements come into view
         const animateElements = document.querySelectorAll('.animate-fadeIn');
-
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -167,6 +222,21 @@
 
         animateElements.forEach(element => {
             observer.observe(element);
+        });
+
+        // Form submission handling (client-side feedback)
+        document.getElementById('contact-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const button = document.getElementById('contact-submit');
+            const spinner = button.querySelector('.spinner');
+            button.disabled = true;
+            spinner.style.display = 'inline-block';
+            setTimeout(() => {
+                button.disabled = false;
+                spinner.style.display = 'none';
+                alert('Message sent! We’ll get back to you soon.');
+                document.getElementById('contact-form').reset();
+            }, 1000);
         });
     </script>
 </body>
