@@ -227,6 +227,17 @@ $achievements = [
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <div class="card spin-card">
+                            <img src="https://via.placeholder.com/300x150?text=Spin+%26+Earn" class="card-img-top" alt="Spin & Earn">
+                            <div class="card-body">
+                                <h5 class="card-title">Spin & Earn</h5>
+                                <p class="card-text">Spin to win cash prizes! Includes Registration Spin (up to Ksh 250), Free Weekly Spin (up to Ksh 500), and Bet Spin (stake Ksh 100-1,000 for up to 600% profit).</p>
+                                <p class="card-text"><small class="text-muted">Luck-Based • Varies • Up to 600% Profit</small></p>
+                                <a href="active-game.php?game=spin" class="btn btn-primary w-100">Play Now</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
