@@ -129,9 +129,12 @@ $error = '';
 $result = '';
 
 try {
+    // Define game_type explicitly
+    $game_type = 'spin';
+
     // Check if user has used registration spin today
     $stmt = $conn->prepare('SELECT COUNT(*) as spins FROM user_game_history WHERE user_id = ? AND game_type = ? AND played_at >= DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY)');
-    $stmt->bind_param('is', $user_id, $game_type = 'spin');
+    $stmt->bind_param('is', $user_id, $game_type);
     $stmt->execute();
     $spin_count = $stmt->get_result()->fetch_assoc()['spins'];
     $stmt->close();
