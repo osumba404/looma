@@ -366,7 +366,7 @@ $achievements = [
 
     <!-- Mobile Bottom Navigation (unchanged) -->
     <div class="mobile-bottom-nav">
-        <a href="index1.php" class="mobile-nav-item">
+        <a href="index.php" class="mobile-nav-item">
             <i class="fas fa-home"></i><span>Home</span>
         </a>
         <a href="games.php" class="mobile-nav-item active">
@@ -375,7 +375,7 @@ $achievements = [
         <a href="questions.php" class="mobile-nav-item">
             <i class="fas fa-book"></i><span>Quizzes</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item">
+        <a href="wallet.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i><span>Earnings</span>
         </a>
         <a href="settings.php" class="mobile-nav-item">

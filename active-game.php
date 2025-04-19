@@ -37,6 +37,13 @@ if (!$user) {
     $user = ['username' => 'Guest', 'full_name' => '']; // Fallback
 }
 
+// Define reward sets for each spin type
+$reward_sets = [
+    'registration' => [0, 50, 100, 150, 200, 250], // Ksh rewards
+    'weekly' => [0, 100, 200, 300, 400, 500],
+    'bet' => [] // Will be calculated dynamically based on stake
+];
+
 try {
     // Begin transaction for atomic updates
     $conn->begin_transaction();
@@ -69,15 +76,13 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['spin_type'])) {
         $spin_type = $_POST['spin_type'];
         $stake = isset($_POST['stake']) ? floatval($_POST['stake']) : 0;
-        $max_win = 0;
         $reward_source = 'normal';
+        $rewards = $reward_sets[$spin_type] ?? [];
 
         // Validate spin type and eligibility
         if ($spin_type === 'registration' && $spin_eligibility['registration']) {
-            $max_win = 250; // Ksh 250 for registration spin
             $reward_source = 'registration';
         } elseif ($spin_type === 'weekly' && $spin_eligibility['weekly']) {
-            $max_win = 500; // Ksh 500 for weekly spin
             $reward_source = 'loyalty';
         } elseif ($spin_type === 'bet' && $stake >= 100 && $stake <= 1000) {
             // Check wallet balance for bet spin
@@ -87,8 +92,9 @@ try {
             $balance = $stmt->get_result()->fetch_assoc()['balance'] ?? 0;
             $stmt->close();
             if ($balance >= $stake) {
-                $max_win = $stake * 6; // Up to 600% profit
-                $reward_source = 'normal';
+                // Dynamically generate rewards for bet spin (0 to 600% of stake)
+                $max_win = $stake * 6;
+                $rewards = [0, $stake * 0.5, $stake, $stake * 2, $stake * 4, $max_win];
             } else {
                 $result = '<div class="alert alert-danger">Insufficient wallet balance for stake.</div>';
             }
@@ -96,7 +102,7 @@ try {
             $result = '<div class="alert alert-danger">Invalid spin type or spin already used.</div>';
         }
 
-        if ($max_win > 0) {
+        if (!empty($rewards)) {
             // Deduct stake for bet spin
             if ($spin_type === 'bet') {
                 $stmt = $conn->prepare('UPDATE wallet SET balance = balance - ?, last_interact = CURRENT_TIMESTAMP WHERE user_id = ?');
@@ -105,8 +111,8 @@ try {
                 $stmt->close();
             }
 
-            // Simulate spin (random win between 0 and max_win)
-            $win_amount = rand(0, $max_win);
+            // Select random reward
+            $win_amount = $rewards[array_rand($rewards)];
 
             // Update wallet with win amount
             $stmt = $conn->prepare('UPDATE wallet SET balance = balance + ?, last_interact = CURRENT_TIMESTAMP WHERE user_id = ?');
@@ -143,7 +149,8 @@ try {
             // Commit transaction
             $conn->commit();
 
-            $result = '<div class="alert alert-success">Congratulations! You won Ksh ' . number_format($win_amount, 2) . '!</div>';
+            // Pass win amount to JavaScript for wheel animation and pop-up
+            $result = '<script>const spinResult = ' . json_encode(['amount' => $win_amount, 'rewards' => $rewards]) . ';</script>';
         } else {
             $conn->rollback();
         }
@@ -194,20 +201,18 @@ if (count($name_parts) >= 1) {
             justify-content: center;
             align-items: center;
             margin-bottom: 2rem;
+            position: relative;
         }
-        .wheel {
+        .wheel-container {
+            position: relative;
             width: 300px;
             height: 300px;
+        }
+        .casino-wheel {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
-            background: conic-gradient(
-                var(--primary-color) 0% 20%,
-                var(--secondary-color) 20% 40%,
-                var(--accent-color) 40% 60%,
-                var(--light-color) 60% 80%,
-                var(--dark-color) 80% 100%
-            );
-            position: relative;
-            transition: transform 0.1s;
+            border: 3px solid var(--dark-color);
         }
         .wheel-pointer {
             position: absolute;
@@ -218,7 +223,8 @@ if (count($name_parts) >= 1) {
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
-            border-bottom: 30px solid var(--dark-color);
+            border-bottom: 30px solid var(--secondary-color);
+            z-index: 10;
         }
         .spin-btn {
             background-color: var(--primary-color);
@@ -233,11 +239,9 @@ if (count($name_parts) >= 1) {
         .spin-btn:hover {
             background-color: var(--secondary-color);
         }
-        .spin-result {
-            text-align: center;
-            margin-top: 2rem;
-            color: var(--dark-color);
-            font-weight: 600;
+        .spin-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
         }
         .bet-input {
             margin: 1rem 0;
@@ -261,6 +265,29 @@ if (count($name_parts) >= 1) {
         .card:hover {
             transform: translateY(-5px);
         }
+        .modal-content {
+            border-radius: 10px;
+            background: var(--light-color);
+        }
+        .modal-header {
+            background: var(--primary-color);
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        .modal-title {
+            font-weight: 600;
+        }
+        .modal-body {
+            font-size: 1.2rem;
+            text-align: center;
+            color: var(--dark-color);
+        }
+        .modal-footer .btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -271,30 +298,14 @@ if (count($name_parts) >= 1) {
             <p>Earn While You Play</p>
         </div>
         <nav class="nav flex-column">
-            <a href="index1.php" class="nav-link">
-                <i class="fas fa-home"></i><span>Dashboard</span>
-            </a>
-            <a href="games.php" class="nav-link">
-                <i class="fas fa-gamepad"></i><span>Games</span>
-            </a>
-            <a href="questions.php" class="nav-link">
-                <i class="fas fa-book"></i><span>Quizes</span>
-            </a>
-            <a href="wallet1.php" class="nav-link">
-                <i class="fas fa-chart-line"></i><span>Earnings</span>
-            </a>
-            <a href="referrals.php" class="nav-link">
-                <i class="fas fa-users"></i><span>Referrals</span>
-            </a>
-            <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i><span>Leaderboard</span>
-            </a>
-            <a href="settings.php" class="nav-link">
-                <i class="fas fa-cog"></i><span>Settings</span>
-            </a>
-            <a href="logout.php" class="nav-link">
-                <i class="fas fa-sign-out-alt"></i><span>Log out</span>
-            </a>
+            <a href="index1.php" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+            <a href="games.php" class="nav-link"><i class="fas fa-gamepad"></i><span>Games</span></a>
+            <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
+            <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
+            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>
+            <a href="achievements.php" class="nav-link"><i class="fas fa-trophy"></i><span>Leaderboard</span></a>
+            <a href="settings.php" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
+            <a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
         </nav>
         <div class="sidebar-footer">
             <p>© 2025 Looma</p>
@@ -329,14 +340,15 @@ if (count($name_parts) >= 1) {
                         <div class="card">
                             <div class="card-body text-center">
                                 <div class="spin-wheel">
-                                    <div class="wheel" id="spinWheel">
+                                    <div class="wheel-container">
+                                        <canvas id="wheel" class="casino-wheel" width="300" height="300"></canvas>
                                         <div class="wheel-pointer"></div>
                                     </div>
                                 </div>
                                 <form method="POST" id="spinForm">
                                     <div class="mb-3">
                                         <label class="form-label">Spin Type:</label>
-                                        <select class="form-select" name="spin_type" required>
+                                        <select class="form-select" name="spin_type" id="spinType" required>
                                             <option value="registration" <?php echo !$spin_eligibility['registration'] ? 'disabled' : ''; ?>>Registration Spin (Up to Ksh 250, 1-time)</option>
                                             <option value="weekly" <?php echo !$spin_eligibility['weekly'] ? 'disabled' : ''; ?>>Free Weekly Spin (Up to Ksh 500, 1/week)</option>
                                             <option value="bet">Bet Spin (Stake Ksh 100-1,000)</option>
@@ -344,7 +356,7 @@ if (count($name_parts) >= 1) {
                                     </div>
                                     <div class="mb-3 bet-input-container" style="display: none;">
                                         <label class="form-label">Stake Amount (Ksh):</label>
-                                        <input type="number" name="stake" class="bet-input" min="100" max="1000" placeholder="Enter Ksh 100-1000">
+                                        <input type="number" name="stake" id="stakeInput" class="bet-input" min="100" max="1000" placeholder="Enter Ksh 100-1000">
                                     </div>
                                     <button type="submit" class="spin-btn" id="spinBtn">Spin Now</button>
                                 </form>
@@ -358,30 +370,37 @@ if (count($name_parts) >= 1) {
         </section>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
-    <div class="mobile-bottom-nav">
-        <a href="index.php" class="mobile-nav-item">
-            <i class="fas fa-home"></i><span>Home</span>
-        </a>
-        <a href="games.php" class="mobile-nav-item">
-            <i class="fas fa-gamepad"></i><span>Games</span>
-        </a>
-        <a href="questions.php" class="mobile-nav-item">
-            <i class="fas fa-book"></i><span>Quizzes</span>
-        </a>
-        <a href="wallet.php" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i><span>Earnings</span>
-        </a>
-        <a href="settings.php" class="mobile-nav-item">
-            <i class="fas fa-user"></i><span>Account</span>
-        </a>
-        <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i><span>Log out</span>
-        </a>
+    <!-- Pop-up Modal -->
+    <div class="modal fade" id="winModal" tabindex="-1" aria-labelledby="winModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="winModalLabel">Congratulations!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="winMessage">
+                    You won Ksh 0!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <a href="index.php" class="mobile-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="games.php" class="mobile-nav-item"><i class="fas fa-gamepad"></i><span>Games</span></a>
+        <a href="questions.php" class="mobile-nav-item"><i class="fas fa-book"></i><span>Quizzes</span></a>
+        <a href="wallet.php" class="mobile-nav-item"><i class="fas fa-wallet"></i><span>Earnings</span></a>
+        <a href="settings.php" class="mobile-nav-item"><i class="fas fa-user"></i><span>Account</span></a>
+        <a href="logout.php" class="mobile-nav-item"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar
+        // Sidebar toggle
         document.getElementById('toggleSidebar').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('mainContent').classList.toggle('main-content-expanded');
@@ -396,48 +415,139 @@ if (count($name_parts) >= 1) {
                 document.getElementById('sidebar').classList.add('active');
             }
         }
-
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 
-        // Spin wheel animation
+        // Wheel setup
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const rewardSets = {
+            registration: [0, 50, 100, 150, 200, 250],
+            weekly: [0, 100, 200, 300, 400, 500],
+            bet: [0, 0, 0, 0, 0, 0] // Placeholder, updated dynamically
+        };
+        const colors = ['#ff6f61', '#00cec9', '#fd79a8', '#6b7280', '#ed8936', '#9f7aea'];
+        let currentRewards = rewardSets.registration;
         let isSpinning = false;
+
+        function drawWheel(rewards) {
+            const numSegments = rewards.length;
+            const angle = (2 * Math.PI) / numSegments;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSegments; i++) {
+                ctx.beginPath();
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, 150, i * angle, (i + 1) * angle);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw reward text
+                ctx.save();
+                ctx.translate(150, 150);
+                ctx.rotate(i * angle + angle / 2);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Poppins';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Ksh ${rewards[i]}`, 100, 0);
+                ctx.restore();
+            }
+        }
+
+        // Initial draw
+        drawWheel(currentRewards);
+
+        // Update wheel rewards based on spin type
+        document.getElementById('spinType').addEventListener('change', function() {
+            const spinType = this.value;
+            const stakeInput = document.getElementById('stakeInput');
+            const betInputContainer = document.querySelector('.bet-input-container');
+
+            if (spinType === 'bet') {
+                betInputContainer.style.display = 'block';
+                stakeInput.addEventListener('input', function() {
+                    const stake = parseFloat(this.value) || 0;
+                    if (stake >= 100 && stake <= 1000) {
+                        currentRewards = [0, stake * 0.5, stake, stake * 2, stake * 4, stake * 6];
+                        drawWheel(currentRewards);
+                    }
+                });
+            } else {
+                betInputContainer.style.display = 'none';
+                currentRewards = rewardSets[spinType];
+                drawWheel(currentRewards);
+            }
+        });
+
+        // Spin wheel
         document.getElementById('spinForm').addEventListener('submit', function(e) {
             e.preventDefault();
             if (isSpinning) return;
 
-            const spinType = document.querySelector('select[name="spin_type"]').value;
-            const stakeInput = document.querySelector('input[name="stake"]');
-            const betInputContainer = document.querySelector('.bet-input-container');
-
+            const spinType = document.getElementById('spinType').value;
+            const stakeInput = document.getElementById('stakeInput');
             if (spinType === 'bet' && (!stakeInput.value || stakeInput.value < 100 || stakeInput.value > 1000)) {
                 alert('Please enter a stake between Ksh 100 and Ksh 1,000.');
                 return;
             }
 
             isSpinning = true;
-            const wheel = document.getElementById('spinWheel');
-            wheel.style.animation = 'none';
-            wheel.offsetHeight; // Trigger reflow
-            wheel.style.animation = 'spin 4s ease-out';
-            document.getElementById('spinBtn').disabled = true;
+            const spinBtn = document.getElementById('spinBtn');
+            spinBtn.disabled = true;
 
-            setTimeout(() => {
+            // Trigger server-side spin
+            fetch(window.location.href, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Extract spinResult from response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'text/html');
+                const script = doc.querySelector('script:not([src])');
+                let spinResult = { amount: 0, rewards: currentRewards };
+                if (script) {
+                    eval(script.textContent); // Safely parse spinResult
+                }
+
+                // Calculate rotation to land on the winning reward (pointer at top, 0°)
+                const numSegments = spinResult.rewards.length;
+                const angle = 360 / numSegments;
+                const winIndex = spinResult.rewards.indexOf(spinResult.amount);
+                // Adjust so the winning segment's center is at 0° (top)
+                const targetAngle = - (winIndex * angle + angle / 2);
+                const totalRotation = 360 * 5 + targetAngle; // 5 full spins + target
+
+                canvas.style.transition = 'transform 4s ease-out';
+                canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+                setTimeout(() => {
+                    isSpinning = false;
+                    spinBtn.disabled = false;
+                    canvas.style.transition = 'none';
+                    canvas.style.transform = `rotate(${totalRotation % 360}deg)`;
+
+                    // Show pop-up with win amount
+                    const winModal = new bootstrap.Modal(document.getElementById('winModal'));
+                    document.getElementById('winMessage').innerText = `You won Ksh ${spinResult.amount}!`;
+                    winModal.show();
+
+                    // Refresh page after closing modal to update eligibility
+                    document.getElementById('winModal').addEventListener('hidden.bs.modal', function() {
+                        location.reload();
+                    }, { once: true });
+                }, 4000);
+            })
+            .catch(err => {
                 isSpinning = false;
-                wheel.style.animation = 'none';
-                document.getElementById('spinBtn').disabled = false;
-                this.submit();
-            }, 4000);
-        });
-
-        // Show/hide bet input based on spin type
-        document.querySelector('select[name="spin_type"]').addEventListener('change', function() {
-            const betInputContainer = document.querySelector('.bet-input-container');
-            if (this.value === 'bet') {
-                betInputContainer.style.display = 'block';
-            } else {
-                betInputContainer.style.display = 'none';
-            }
+                spinBtn.disabled = false;
+                alert('Error processing spin: ' + err.message);
+            });
         });
     </script>
 </body>
