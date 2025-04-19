@@ -1,50 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Looma | Games</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
-    <style>
-        .games-section, .game-progress, .achievements {
-            padding: 2rem 0;
-        }
-
-        .card {
-            border-radius: 10px;
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card-img-top {
-            height: 150px;
-            object-fit: cover;
-        }
-
-        .progress {
-            height: 20px;
-        }
-
-        .achievement-card i {
-            color: #007bff;
-        }
-
-        .btn-primary {
-            transition: background-color 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
 <?php
 session_start();
 require_once 'includes/db.php';
@@ -77,6 +30,40 @@ try {
     $error = '<div class="alert alert-danger">Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
 
+// Fetch spin data
+$spin_summary = ['registration' => false, 'weekly' => false, 'bet' => false];
+$spin_rewards = [];
+$total_spin_points = 0;
+
+try {
+    // Check available spins (e.g., has the user used their registration spin?)
+    $stmt = $conn->prepare('SELECT spin_type, COUNT(*) as count FROM spins WHERE user_id = ? GROUP BY spin_type');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $spin_summary[$row['spin_type']] = $row['count'] > 0;
+    }
+    $stmt->close();
+
+    // Fetch recent spin rewards
+    $stmt = $conn->prepare('SELECT reward, created_at FROM spin_rewards WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $spin_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    // Fetch total points earned from spins
+    $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "spin"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $total_spin_points = $result->fetch_assoc()['total_points'] ?? 0;
+    $stmt->close();
+} catch (Exception $e) {
+    $error .= '<div class="alert alert-danger">Error fetching spin data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+}
+
 // Get user initials
 $initials = '';
 $name_parts = explode(' ', $user['full_name']);
@@ -87,7 +74,7 @@ if (count($name_parts) >= 1) {
     }
 }
 
-// Mock game progress (since no games table exists)
+// Mock game progress (unchanged)
 $game_progress = [
     ['name' => 'Memory Match', 'level' => 2, 'points' => 85, 'max_points' => 100, 'progress' => 85],
     ['name' => 'Word Scramble', 'round' => 4, 'points' => 60, 'max_points' => 80, 'progress' => 75],
@@ -95,7 +82,7 @@ $game_progress = [
     ['name' => 'Daily Challenge', 'completed' => true, 'points' => 50, 'max_points' => 50, 'progress' => 100]
 ];
 
-// Mock achievements (since no achievements table exists)
+// Mock achievements (unchanged)
 $achievements = [
     ['title' => 'First Win', 'description' => 'Won your first game', 'icon' => 'fa-medal', 'date' => '2025-04-10'],
     ['title' => 'Quick Learner', 'description' => 'Completed 5 games', 'icon' => 'fa-star', 'date' => '2025-04-12'],
@@ -104,44 +91,79 @@ $achievements = [
 ];
 ?>
 
-    <!-- Desktop Sidebar -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looma | Games</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        .games-section, .game-progress, .achievements {
+            padding: 2rem 0;
+        }
+        .card {
+            border-radius: 10px;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-img-top {
+            height: 150px;
+            object-fit: cover;
+        }
+        .progress {
+            height: 20px;
+        }
+        .achievement-card i {
+            color: #007bff;
+        }
+        .btn-primary {
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .spin-details {
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar (unchanged) -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h2>LOOMA</h2>
             <p>Earn While You Play</p>
         </div>
         <nav class="nav flex-column">
-            <a href="index.php" class="nav-link">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
+            <a href="index1.php" class="nav-link">
+                <i class="fas fa-home"></i><span>Dashboard</span>
             </a>
             <a href="games.php" class="nav-link active">
-                <i class="fas fa-gamepad"></i>
-                <span>Games</span>
+                <i class="fas fa-gamepad"></i><span>Games</span>
             </a>
             <a href="questions.php" class="nav-link">
-                <i class="fas fa-book"></i>
-                <span>Quizes</span>
+                <i class="fas fa-book"></i><span>Quizes</span>
             </a>
-            <a href="wallet.php" class="nav-link">
-                <i class="fas fa-chart-line"></i>
-                <span>Earnings</span>
+            <a href="wallet1.php" class="nav-link">
+                <i class="fas fa-chart-line"></i><span>Earnings</span>
             </a>
             <a href="referrals.php" class="nav-link">
-                <i class="fas fa-users"></i>
-                <span>Referrals</span>
+                <i class="fas fa-users"></i><span>Referrals</span>
             </a>
             <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i>
-                <span>Leaderboard</span>
+                <i class="fas fa-trophy"></i><span>Leaderboard</span>
             </a>
             <a href="settings.php" class="nav-link">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
+                <i class="fas fa-cog"></i><span>Settings</span>
             </a>
             <a href="logout.php" class="nav-link">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Log out</span>
+                <i class="fas fa-sign-out-alt"></i><span>Log out</span>
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -151,7 +173,7 @@ $achievements = [
 
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
-        <!-- Top Navbar -->
+        <!-- Top Navbar (unchanged) -->
         <div class="top-navbar">
             <button class="toggle-sidebar" id="toggleSidebar">
                 <i class="fas fa-bars"></i>
@@ -172,6 +194,7 @@ $achievements = [
                 <?php endif; ?>
                 <h2 class="mb-4">Featured Games</h2>
                 <div class="row g-4">
+                    <!-- Other game cards (unchanged) -->
                     <div class="col-md-4">
                         <div class="card">
                             <img src="https://via.placeholder.com/300x150?text=Memory+Match" class="card-img-top" alt="Memory Match">
@@ -227,12 +250,36 @@ $achievements = [
                             </div>
                         </div>
                     </div>
+
+                    <!-- Updated Spin & Earn Card -->
                     <div class="col-md-4">
                         <div class="card spin-card">
                             <img src="https://via.placeholder.com/300x150?text=Spin+%26+Earn" class="card-img-top" alt="Spin & Earn">
                             <div class="card-body">
                                 <h5 class="card-title">Spin & Earn</h5>
-                                <p class="card-text">Spin to win cash prizes! Includes Registration Spin (up to Ksh 250), Free Weekly Spin (up to Ksh 500), and Bet Spin (stake Ksh 100-1,000 for up to 600% profit).</p>
+                                <p class="card-text">Spin the wheel to win exciting rewards!</p>
+                                <div class="spin-details">
+                                    <?php if (!$spin_summary['registration']): ?>
+                                        <p><strong>Registration Spin:</strong> Available! Win up to Ksh 250.</p>
+                                    <?php else: ?>
+                                        <p><strong>Registration Spin:</strong> Already used.</p>
+                                    <?php endif; ?>
+                                    <?php if (!$spin_summary['weekly']): ?>
+                                        <p><strong>Weekly Spin:</strong> Available! Win up to Ksh 500.</p>
+                                    <?php else: ?>
+                                        <p><strong>Weekly Spin:</strong> Used this week.</p>
+                                    <?php endif; ?>
+                                    <p><strong>Bet Spin:</strong> Stake Ksh 100-1,000 for up to 600% profit.</p>
+                                    <?php if (!empty($spin_rewards)): ?>
+                                        <p><strong>Recent Rewards:</strong></p>
+                                        <ul>
+                                            <?php foreach ($spin_rewards as $reward): ?>
+                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <p><strong>Total Spin Points:</strong> <?php echo htmlspecialchars($total_spin_points); ?></p>
+                                </div>
                                 <p class="card-text"><small class="text-muted">Luck-Based • Varies • Up to 600% Profit</small></p>
                                 <a href="active-game.php?game=spin" class="btn btn-primary w-100">Play Now</a>
                             </div>
@@ -242,7 +289,7 @@ $achievements = [
             </div>
         </section>
 
-        <!-- Game Progress -->
+        <!-- Game Progress (unchanged) -->
         <section class="game-progress py-4 animate-fadeIn">
             <div class="container">
                 <h2 class="mb-4">Your Game Progress</h2>
@@ -251,6 +298,7 @@ $achievements = [
                         <?php if (empty($game_progress)): ?>
                             <p>Start playing games to track your progress!</p>
                         <?php else: ?>
+                            <div class="row sheezy
                             <div class="row">
                                 <?php foreach ($game_progress as $game): ?>
                                     <div class="col-md-6 mb-3">
@@ -285,7 +333,7 @@ $achievements = [
             </div>
         </section>
 
-        <!-- Achievements -->
+        <!-- Achievements (unchanged) -->
         <section class="achievements py-4 animate-fadeIn">
             <div class="container">
                 <h2 class="mb-4">Recent Achievements</h2>
@@ -316,42 +364,36 @@ $achievements = [
         </section>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
+    <!-- Mobile Bottom Navigation (unchanged) -->
     <div class="mobile-bottom-nav">
-        <a href="index.php" class="mobile-nav-item">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
+        <a href="index1.php" class="mobile-nav-item">
+            <i class="fas fa-home"></i><span>Home</span>
         </a>
         <a href="games.php" class="mobile-nav-item active">
-            <i class="fas fa-gamepad"></i>
-            <span>Games</span>
+            <i class="fas fa-gamepad"></i><span>Games</span>
         </a>
         <a href="questions.php" class="mobile-nav-item">
-            <i class="fas fa-book"></i>
-            <span>Quizzes</span>
+            <i class="fas fa-book"></i><span>Quizzes</span>
         </a>
-        <a href="wallet.php" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>Earnings</span>
+        <a href="wallet1.php" class="mobile-nav-item">
+            <i class="fas fa-wallet"></i><span>Earnings</span>
         </a>
         <a href="settings.php" class="mobile-nav-item">
-            <i class="fas fa-user"></i>
-            <span>Account</span>
+            <i class="fas fa-user"></i><span>Account</span>
         </a>
         <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Log out</span>
+            <i class="fas fa-sign-out-alt"></i><span>Log out</span>
         </a>
     </div>
 
     <script>
-        // Toggle sidebar
+        // Toggle sidebar (unchanged)
         document.getElementById('toggleSidebar').addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('mainContent').classList.toggle('main-content-expanded');
         });
 
-        // Responsive sidebar for mobile
+        // Responsive sidebar for mobile (unchanged)
         function handleResize() {
             if (window.innerWidth < 992) {
                 document.getElementById('sidebar').classList.remove('active');
@@ -364,7 +406,7 @@ $achievements = [
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 
-        // Add animation classes as elements come into view
+        // Add animation classes as elements come into view (unchanged)
         const animateElements = document.querySelectorAll('.animate-fadeIn');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
