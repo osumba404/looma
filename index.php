@@ -257,6 +257,10 @@
             }
         }
 
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
+
         // Run on load and resize
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);

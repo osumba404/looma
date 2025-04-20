@@ -102,10 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="questions.php" class="nav-link">
-                <i class="fas fa-book"></i>
-                <span>Quizes</span>
-            </a>
             <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
@@ -235,6 +231,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 mainContent.classList.remove('main-content-expanded');
             }
         }
+
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
 
         // Form Validation and Submission Handling
         function showAlert(elementId, message, type) {

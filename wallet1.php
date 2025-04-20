@@ -250,6 +250,10 @@ if (count($name_parts) >= 1) {
             }
         }
 
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
+
         // Add animation classes as elements come into view
         const animateElements = document.querySelectorAll('.animate-fadeIn');
         const observer = new IntersectionObserver((entries) => {

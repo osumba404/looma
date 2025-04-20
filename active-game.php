@@ -291,40 +291,50 @@ if (count($name_parts) >= 1) {
     </style>
 </head>
 <body>
-    <!-- Desktop Sidebar -->
+    <!-- Sidebar (unchanged) -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h2>LOOMA</h2>
             <p>Earn While You Play</p>
         </div>
         <nav class="nav flex-column">
-            <a href="index1.php" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
-            <a href="games.php" class="nav-link"><i class="fas fa-gamepad"></i><span>Games</span></a>
-            <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
-            <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
-            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>
-            <a href="achievements.php" class="nav-link"><i class="fas fa-trophy"></i><span>Leaderboard</span></a>
-            <a href="settings.php" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
-            <a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
+            <a href="index1.php" class="nav-link">
+                <i class="fas fa-home"></i><span>Dashboard</span>
+            </a>
+            <a href="games.php" class="nav-link active">
+                <i class="fas fa-gamepad"></i><span>Games</span>
+            </a>
+            <a href="wallet1.php" class="nav-link">
+                <i class="fas fa-chart-line"></i><span>Earnings</span>
+            </a>
+            <a href="referrals.php" class="nav-link">
+                <i class="fas fa-users"></i><span>Referrals</span>
+            </a>
+            <a href="settings.php" class="nav-link">
+                <i class="fas fa-cog"></i><span>Settings</span>
+            </a>
+            <a href="logout.php" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i><span>Log out</span>
+            </a>
         </nav>
         <div class="sidebar-footer">
             <p>© 2025 Looma</p>
         </div>
     </div>
 
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-            <button class="toggle-sidebar" id="toggleSidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+        <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
                     <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
+            
         </div>
 
         <!-- Game Section -->
@@ -390,31 +400,54 @@ if (count($name_parts) >= 1) {
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
-        <a href="index.php" class="mobile-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
-        <a href="games.php" class="mobile-nav-item"><i class="fas fa-gamepad"></i><span>Games</span></a>
-        <a href="questions.php" class="mobile-nav-item"><i class="fas fa-book"></i><span>Quizzes</span></a>
-        <a href="wallet.php" class="mobile-nav-item"><i class="fas fa-wallet"></i><span>Earnings</span></a>
-        <a href="settings.php" class="mobile-nav-item"><i class="fas fa-user"></i><span>Account</span></a>
-        <a href="logout.php" class="mobile-nav-item"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
+        <a href="index1.php" class="mobile-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="games.php" class="mobile-nav-item active">
+            <i class="fas fa-gamepad"></i>
+            <span>Games</span>
+        </a>
+        <a href="wallet1.php" class="mobile-nav-item">
+            <i class="fas fa-wallet"></i>
+            <span>Earnings</span>
+        </a>
+        <a href="referrals.php" class="mobile-nav-item">
+            <i class="fas fa-users"></i>
+            <span>Refer</span>
+        </a>
+        <a href="settings.php" class="mobile-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Account</span>
+        </a>
+        <a href="logout.php" class="mobile-nav-item">
+            <i class="fas fa-sign-out-alt"></i> 
+            <span>Log out</span>
+        </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar toggle
-        document.getElementById('toggleSidebar').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('mainContent').classList.toggle('main-content-expanded');
-        });
+        // Toggle sidebar for desktop and mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
+        }
 
-        // Responsive sidebar for mobile
+        // Responsive navigation handling
         function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
             if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('mainContent').classList.remove('main-content-expanded');
+                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+                mainContent.classList.remove('main-content-expanded');
             } else {
-                document.getElementById('sidebar').classList.add('active');
+                sidebar.classList.add('active'); // Show sidebar on desktop
+                mainContent.classList.remove('main-content-expanded');
             }
         }
+
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 

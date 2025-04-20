@@ -407,6 +407,10 @@ $achievements = [
             }
         }
 
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
+
         // Add animation classes as elements come into view (unchanged)
         const animateElements = document.querySelectorAll('.animate-fadeIn');
         const observer = new IntersectionObserver((entries) => {

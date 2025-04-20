@@ -396,6 +396,10 @@ if (count($name_parts) >= 1) {
             }
         }
 
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
+
         // Run on load and resize
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
