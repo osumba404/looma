@@ -64,6 +64,43 @@ try {
     $error .= '<div class="alert alert-danger">Error fetching spin data: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
 
+
+
+
+// Fetch Word Scramble data
+$scramble_games_played = 0;
+$scramble_rewards = [];
+$total_scramble_points = 0;
+
+try {
+    // Fetch total games played for Word Scramble
+    $stmt = $conn->prepare('SELECT COUNT(*) as count FROM user_game_history WHERE user_id = ? AND game_type = "word_scramble"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $scramble_games_played = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
+    $stmt->close();
+
+    // Fetch recent Word Scramble rewards
+    $stmt = $conn->prepare('SELECT reward, created_at FROM scramble_rewards WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $scramble_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    // Fetch total points earned from Word Scramble
+    $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "word_scramble"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $total_scramble_points = $result->fetch_assoc()['total_points'] ?? 0;
+    $stmt->close();
+} catch (Exception $e) {
+    $error .= '<div class="alert alert-danger">Error fetching Word Scramble data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+}
+
+
+
+
 // Get user initials
 $initials = '';
 $name_parts = explode(' ', $user['full_name']);
@@ -131,6 +168,9 @@ $achievements = [
         .spin-details {
             font-size: 0.9rem;
         }
+        .scramble-details {
+    font-size: 0.9rem;
+}
     </style>
 </head>
 <body>
@@ -200,13 +240,25 @@ $achievements = [
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card">
+                        <div class="card scramble-card">
                             <img src="https://via.placeholder.com/300x150?text=Word+Scramble" class="card-img-top" alt="Word Scramble">
                             <div class="card-body">
                                 <h5 class="card-title">Word Scramble</h5>
-                                <p class="card-text">Unscramble letters to form words under time pressure.</p>
-                                <p class="card-text"><small class="text-muted">5 Rounds • 8 Mins • 80 Points</small></p>
-                                <a href="#" class="btn btn-primary w-100">Play Now</a>
+                                <p class="card-text">Unscramble letters to form words and earn rewards.</p>
+                                <div class="scramble-details">
+                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($scramble_games_played); ?></p>
+                                    <?php if (!empty($scramble_rewards)): ?>
+                                        <p><strong>Recent Rewards:</strong></p>
+                                        <ul>
+                                            <?php foreach ($scramble_rewards as $reward): ?>
+                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <p><strong>Total Scramble Points:</strong> <?php echo htmlspecialchars($total_scramble_points); ?></p>
+                                </div>
+                                <p class="card-text"><small class="text-muted">3 Variations • 5-10 Mins • Up to 150 Ksh</small></p>
+                                <a href="active-game.php?game=scramble" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
@@ -225,7 +277,7 @@ $achievements = [
                         <div class="card">
                             <img src="https://via.placeholder.com/300x150?text=Daily+Challenge" class="card-img-top" alt="Daily Challenge">
                             <div class="card-body">
-                                <h5 class="card-title">Daily Challenge</h5>
+                                <h5 class="card-title">History Challenge</h5>
                                 <p class="card-text">A new mini-game every day for bonus points.</p>
                                 <p class="card-text"><small class="text-muted">1 Round • 5 Mins • 50 Points</small></p>
                                 <a href="#" class="btn btn-primary w-100">Play Now</a>
@@ -236,8 +288,8 @@ $achievements = [
                         <div class="card">
                             <img src="https://via.placeholder.com/300x150?text=Trivia+Dash" class="card-img-top" alt="Trivia Dash">
                             <div class="card-body">
-                                <h5 class="card-title">Trivia Dash</h5>
-                                <p class="card-text">Answer fun trivia questions across multiple categories.</p>
+                                <h5 class="card-title">Geography Trivia</h5>
+                                <p class="card-text">Answer Geo and Environment related Questions.</p>
                                 <p class="card-text"><small class="text-muted">10 Questions • 7 Mins • 70 Points</small></p>
                                 <a href="#" class="btn btn-primary w-100">Play Now</a>
                             </div>
