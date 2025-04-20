@@ -114,10 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 <i class="fas fa-users"></i>
                 <span>Referrals</span>
             </a>
-            <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i>
-                <span>Leaderboard</span>
-            </a>
             <a href="settings.php" class="nav-link active">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>

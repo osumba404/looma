@@ -134,10 +134,6 @@ if (count($name_parts) >= 1) {
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="questions.php" class="nav-link">
-                <i class="fas fa-book"></i>
-                <span>Quizes</span>
-            </a>
             <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
@@ -145,10 +141,6 @@ if (count($name_parts) >= 1) {
             <a href="referrals.php" class="nav-link">
                 <i class="fas fa-users"></i>
                 <span>Referrals</span>
-            </a>
-            <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i>
-                <span>Leaderboard</span>
             </a>
             <a href="settings.php" class="nav-link">
                 <i class="fas fa-cog"></i>

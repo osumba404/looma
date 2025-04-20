@@ -147,17 +147,11 @@ $achievements = [
             <a href="games.php" class="nav-link active">
                 <i class="fas fa-gamepad"></i><span>Games</span>
             </a>
-            <a href="questions.php" class="nav-link">
-                <i class="fas fa-book"></i><span>Quizes</span>
-            </a>
             <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i><span>Earnings</span>
             </a>
             <a href="referrals.php" class="nav-link">
                 <i class="fas fa-users"></i><span>Referrals</span>
-            </a>
-            <a href="achievements.php" class="nav-link">
-                <i class="fas fa-trophy"></i><span>Leaderboard</span>
             </a>
             <a href="settings.php" class="nav-link">
                 <i class="fas fa-cog"></i><span>Settings</span>
@@ -170,7 +164,7 @@ $achievements = [
             <p>© 2025 Looma</p>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
