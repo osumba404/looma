@@ -8,8 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
-    <style>
-    </style>
 </head>
 <body>
 <?php
@@ -385,22 +383,28 @@ if (count($name_parts) >= 1) {
     </div>
 
     <script>
-        // Toggle sidebar
-        document.getElementById('toggleSidebar').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('mainContent').classList.toggle('main-content-expanded');
-        });
+        // Toggle sidebar for desktop and mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
+        }
 
-        // Responsive sidebar for mobile
+        // Responsive navigation handling
         function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
             if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('mainContent').classList.remove('main-content-expanded');
+                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+                mainContent.classList.remove('main-content-expanded');
             } else {
-                document.getElementById('sidebar').classList.add('active');
+                sidebar.classList.add('active'); // Show sidebar on desktop
+                mainContent.classList.remove('main-content-expanded');
             }
         }
 
+        // Run on load and resize
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 
