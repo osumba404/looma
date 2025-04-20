@@ -8,9 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
-    <style>
-
-    </style>
 </head>
 <body>
     <!-- Desktop Sidebar -->
@@ -40,7 +37,7 @@
         </nav>
         
         <div class="sidebar-footer">
-            <p>&copy; 2025 Looma</p>
+            <p>© 2025 Looma</p>
         </div>
     </div>
     
@@ -48,12 +45,11 @@
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-                <div class="user-profile">
-                   
-                    <div>
-                        <div class="fw-bold">LOOMA</div>
-                    </div>
+            <div class="user-profile">
+                <div>
+                    <div class="fw-bold">LOOMA</div>
                 </div>
+            </div>
         </div>
         <!-- Content Container -->
         <div class="content-container">
@@ -219,58 +215,62 @@
         </div>
     </div>
     
-<!-- Mobile Bottom Navigation -->
-<div class="mobile-bottom-nav">
-    <a href="index.php" class="mobile-nav-item active">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-    </a>
-    <a href="about.php" class="mobile-nav-item">
-        <i class="fas fa-info-circle"></i> <!-- Updated to info icon -->
-        <span>About</span>
-    </a>
-    <a href="contact.php" class="mobile-nav-item">
-        <i class="fas fa-envelope"></i> <!-- Updated to contact/envelope icon -->
-        <span>Contact</span>
-    </a>
-    <a href="login.php" class="mobile-nav-item">
-        <i class="fas fa-sign-in-alt"></i> <!-- Updated to login icon -->
-        <span>Log in</span>
-    </a>
-</div>
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <a href="index.php" class="mobile-nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="about.php" class="mobile-nav-item">
+            <i class="fas fa-info-circle"></i>
+            <span>About</span>
+        </a>
+        <a href="contact.php" class="mobile-nav-item">
+            <i class="fas fa-envelope"></i>
+            <span>Contact</span>
+        </a>
+        <a href="login.php" class="mobile-nav-item">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Log in</span>
+        </a>
+    </div>
 
-    
     <script>
-        // Toggle sidebar
-        document.getElementById('toggleSidebar').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('mainContent').classList.toggle('main-content-expanded');
-        });
-        
-        // Responsive sidebar for mobile
+        // Toggle sidebar for desktop and mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
+        }
+
+        // Responsive navigation handling
         function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
             if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('mainContent').classList.remove('main-content-expanded');
+                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+                mainContent.classList.remove('main-content-expanded');
             } else {
-                document.getElementById('sidebar').classList.add('active');
+                sidebar.classList.add('active'); // Show sidebar on desktop
+                mainContent.classList.remove('main-content-expanded');
             }
         }
-        
+
+        // Run on load and resize
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
-        
+
         // Add animation classes as elements come into view
         const animateElements = document.querySelectorAll('.animate-fadeIn');
-        
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-fadeIn');
+                    entry.target.classList.add('animate'); // Use a different class to trigger animation
                 }
             });
         }, { threshold: 0.1 });
-        
+
         animateElements.forEach(element => {
             observer.observe(element);
         });
