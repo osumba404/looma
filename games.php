@@ -258,7 +258,7 @@ $achievements = [
                                     <p><strong>Total Scramble Points:</strong> <?php echo htmlspecialchars($total_scramble_points); ?></p>
                                 </div>
                                 <p class="card-text"><small class="text-muted">3 Variations • 5-10 Mins • Up to 150 Ksh</small></p>
-                                <a href="active-game.php?game=scramble" class="btn btn-primary w-100">Play Now</a>
+                                <a href="word-scramble-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
@@ -326,7 +326,7 @@ $achievements = [
                                     <p><strong>Total Spin Points:</strong> <?php echo htmlspecialchars($total_spin_points); ?></p>
                                 </div>
                                 <p class="card-text"><small class="text-muted">Luck-Based • Varies • Up to 600% Profit</small></p>
-                                <a href="active-game.php?game=spin" class="btn btn-primary w-100">Play Now</a>
+                                <a href="spin-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
