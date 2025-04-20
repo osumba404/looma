@@ -398,6 +398,10 @@ if (count($name_parts) >= 1) {
         </div>
     </div>
 
+    <div>
+        <a href="games.php" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">More Games</a>
+    </div>
+
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item">

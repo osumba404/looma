@@ -263,7 +263,6 @@ if (count($name_parts) >= 1) {
         <nav class="nav flex-column">
             <a href="index1.php" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
             <a href="games.php" class="nav-link active"><i class="fas fa-gamepad"></i><span>Games</span></a>
-            <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
             <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
             <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>           
             <a href="settings.php" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
@@ -359,6 +358,9 @@ if (count($name_parts) >= 1) {
                 </div>
             </div>
         </div>
+    </div>
+    <div>
+        <a href="games.php" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">More Games</a>
     </div>
 
     <!-- Mobile Bottom Navigation -->
