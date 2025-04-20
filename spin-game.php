@@ -297,6 +297,7 @@ if (count($name_parts) >= 1) {
             <h2>LOOMA</h2>
             <p>Earn While You Play</p>
         </div>
+        
         <nav class="nav flex-column">
             <a href="index1.php" class="nav-link">
                 <i class="fas fa-home"></i><span>Dashboard</span>
