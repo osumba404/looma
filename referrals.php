@@ -206,8 +206,9 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
         </div>
     </div>
 
-     <!-- Mobile Bottom Navigation -->
-     <div class="mobile-bottom-nav">
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item">
             <i class="fas fa-home"></i>
             <span>Home</span>
@@ -229,24 +230,30 @@ $referral_link = 'http://localhost/new/looma/register.php?ref=' . urlencode($use
             <span>Account</span>
         </a>
         <a href="logout.php" class="mobile-nav-item">
-        <i class="fas fa-sign-out-alt"></i> 
-        <span>Log out</span>
-    </a>
+            <i class="fas fa-sign-out-alt"></i> 
+            <span>Log out</span>
+        </a>
     </div>
-    <script>
-        // Toggle sidebar
-        document.getElementById('toggleSidebar').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('mainContent').classList.toggle('main-content-expanded');
-        });
 
-        // Responsive sidebar for mobile
+    <script>
+        // Toggle sidebar for desktop and mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
+        }
+
+        // Responsive navigation handling
         function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
             if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('mainContent').classList.remove('main-content-expanded');
+                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+                mainContent.classList.remove('main-content-expanded');
             } else {
-                document.getElementById('sidebar').classList.add('active');
+                sidebar.classList.add('active'); // Show sidebar on desktop
+                mainContent.classList.remove('main-content-expanded');
             }
         }
 
