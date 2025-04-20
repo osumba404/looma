@@ -231,30 +231,32 @@ if (count($name_parts) >= 1) {
             <span>Account</span>
         </a>
         <a href="logout.php" class="mobile-nav-item">
-        <i class="fas fa-sign-out-alt"></i> 
-        <span>Log out</span>
-    </a>
+            <i class="fas fa-sign-out-alt"></i> 
+            <span>Log out</span>
+        </a>
     </div>
 
     <script>
-        // Toggle sidebar
-        document.getElementById('toggleSidebar').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('mainContent').classList.toggle('main-content-expanded');
-        });
-
-        // Responsive sidebar for mobile
-        function handleResize() {
-            if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.remove('active');
-                document.getElementById('mainContent').classList.remove('main-content-expanded');
-            } else {
-                document.getElementById('sidebar').classList.add('active');
-            }
+        // Toggle sidebar for desktop and mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
         }
 
-        window.addEventListener('resize', handleResize);
-        document.addEventListener('DOMContentLoaded', handleResize);
+        // Responsive navigation handling
+        function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            if (window.innerWidth < 992) {
+                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+                mainContent.classList.remove('main-content-expanded');
+            } else {
+                sidebar.classList.add('active'); // Show sidebar on desktop
+                mainContent.classList.remove('main-content-expanded');
+            }
+        }
 
         // Add animation classes as elements come into view
         const animateElements = document.querySelectorAll('.animate-fadeIn');
