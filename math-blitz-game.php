@@ -294,7 +294,7 @@ if (count($name_parts) >= 1) {
         </div>
         <nav class="nav flex-column">
             <a href="index1.php" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
-            <a href="games.php" class="nav-link"><i class="fas fa-gamepad"></i><span>Games</span></a>
+            <a href="games.php" class="nav-link active"><i class="fas fa-gamepad"></i><span>Games</span></a>
             <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
             <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
             <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>
