@@ -39,7 +39,7 @@ try {
 // Check if user data was fetched successfully
 if (!$user) {
     $error .= '<div class="alert alert-danger">User not found or invalid session.</div>';
-    $user = ['username' => 'Guest', 'full_name' => '']; // Fallback
+    $user = ['username' => 'Guest', 'full_name' => ''];
 }
 
 // Create game_rewards table if it doesn't exist
@@ -99,22 +99,9 @@ try {
                 'medium' => 50,
                 'hard' => 80
             ];
-            $max_moves = [
-                'easy' => 8,
-                'medium' => 12,
-                'hard' => 16
-            ];
-            $max_time = [
-                'easy' => 25,
-                'medium' => 40,
-                'hard' => 50
-            ];
 
             if (isset($base_rewards[$difficulty])) {
                 $win_amount = $base_rewards[$difficulty];
-                $move_penalty = max(0, $moves - $max_moves[$difficulty] / 2) * 1.5;
-                $time_penalty = max(0, $time_taken - $max_time[$difficulty] / 2) * 0.3;
-                $win_amount = max(5, $win_amount - $move_penalty - $time_penalty);
                 $points_earned = $win_amount / 10;
 
                 // Update wallet
@@ -131,8 +118,7 @@ try {
                 if ($stmt === false) {
                     throw new Exception('Prepare failed for game history: ' . $conn->error);
                 }
-                $game_type_value = $game_type;
-                $stmt->bind_param('isd', $user_id, $game_type_value, $points_earned);
+                $stmt->bind_param('isd', $user_id, $game_type, $points_earned);
                 $stmt->execute();
                 $stmt->close();
 
@@ -194,28 +180,26 @@ if (count($name_parts) >= 1) {
             --accent-color: #fd79a8;
             --dark-color: #2d3436;
             --light-color: #f5f6fa;
-            --sidebar-width: 280px;
-            --sidebar-collapsed-width: 80px;
         }
         .game-section {
             padding: 2rem 0;
         }
         .memory-grid {
             display: grid;
-            gap: 10px;
+            gap: 5px;
             justify-content: center;
             margin-bottom: 2rem;
         }
         .memory-card {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             background: var(--light-color);
             border: 2px solid var(--dark-color);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.5rem;
             cursor: pointer;
             transition: transform 0.3s ease;
         }
@@ -227,13 +211,17 @@ if (count($name_parts) >= 1) {
         .memory-card.matched {
             background: var(--accent-color);
         }
+        .memory-card.distractor {
+            background: #ccc;
+            cursor: default;
+        }
         .game-btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 5px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
@@ -246,18 +234,11 @@ if (count($name_parts) >= 1) {
         }
         .game-info {
             margin-bottom: 1rem;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--dark-color);
         }
         .alert {
             margin-top: 1rem;
-        }
-        .card {
-            border-radius: 10px;
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
         }
         .modal-content {
             border-radius: 10px;
@@ -266,8 +247,6 @@ if (count($name_parts) >= 1) {
         .modal-header {
             background: var(--primary-color);
             color: white;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
         }
         .modal-title {
             font-weight: 600;
@@ -275,17 +254,30 @@ if (count($name_parts) >= 1) {
         .modal-body {
             font-size: 1.2rem;
             text-align: center;
-            color: var(--dark-color);
         }
         .modal-footer .btn {
             background-color: var(--secondary-color);
             color: white;
             border: none;
         }
+        @media (max-width: 576px) {
+            .memory-card {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            .game-btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+            .game-info {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Desktop Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h2>LOOMA</h2>
@@ -296,7 +288,7 @@ if (count($name_parts) >= 1) {
             <a href="games.php" class="nav-link active"><i class="fas fa-gamepad"></i><span>Games</span></a>
             <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
             <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
-            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>           
+            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>
             <a href="settings.php" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
             <a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
         </nav>
@@ -304,7 +296,7 @@ if (count($name_parts) >= 1) {
             <p>© 2025 Looma</p>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
@@ -327,23 +319,23 @@ if (count($name_parts) >= 1) {
                 <?php echo $result; ?>
                 <h2 class="mb-4">Memory Match</h2>
                 <div class="row justify-content-center">
-                    <div class="col-md-6">
+                    <div class="col-md-8 col-sm-12">
                         <div class="card">
                             <div class="card-body text-center">
                                 <form method="POST" id="gameForm">
                                     <div class="mb-3">
                                         <label class="form-label">Difficulty:</label>
                                         <select class="form-select" name="difficulty" id="difficulty">
-                                            <option value="easy">Easy (4x2, 8 moves, 25s)</option>
-                                            <option value="medium">Medium (5x3, 12 moves, 40s)</option>
-                                            <option value="hard">Hard (5x4, 16 moves, 50s)</option>
+                                            <option value="easy">Easy (6x4, 6 moves, 15s)</option>
+                                            <option value="medium">Medium (8x5, 8 moves, 20s)</option>
+                                            <option value="hard">Hard (10x6, 10 moves, 25s)</option>
                                         </select>
                                     </div>
                                     <button type="button" class="game-btn" id="startGame">Start Game</button>
                                 </form>
                                 <div class="game-info">
-                                    <span>Moves: <span id="moves">0</span>/<span id="maxMoves">8</span></span> |
-                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">25</span>s</span>
+                                    <span>Moves: <span id="moves">0</span>/<span id="maxMoves">6</span></span> |
+                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">15</span>s</span>
                                 </div>
                                 <div id="memoryGrid" class="memory-grid"></div>
                                 <form method="POST" id="resultForm" style="display: none;">
@@ -402,35 +394,17 @@ if (count($name_parts) >= 1) {
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
-        <a href="index1.php" class="mobile-nav-item">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="games.php" class="mobile-nav-item active">
-            <i class="fas fa-gamepad"></i>
-            <span>Games</span>
-        </a>
-        <a href="wallet1.php" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>Earnings</span>
-        </a>
-        <a href="referrals.php" class="mobile-nav-item">
-            <i class="fas fa-users"></i>
-            <span>Refer</span>
-        </a>
-        <a href="settings.php" class="mobile-nav-item">
-            <i class="fas fa-user"></i>
-            <span>Account</span>
-        </a>
-        <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i> 
-            <span>Log out</span>
-        </a>
+        <a href="index1.php" class="mobile-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="games.php" class="mobile-nav-item active"><i class="fas fa-gamepad"></i><span>Games</span></a>
+        <a href="wallet1.php" class="mobile-nav-item"><i class="fas fa-wallet"></i><span>Earnings</span></a>
+        <a href="referrals.php" class="mobile-nav-item"><i class="fas fa-users"></i><span>Refer</span></a>
+        <a href="settings.php" class="mobile-nav-item"><i class="fas fa-user"></i><span>Account</span></a>
+        <a href="logout.php" class="mobile-nav-item"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar for desktop and mobile
+        // Toggle sidebar
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -438,7 +412,7 @@ if (count($name_parts) >= 1) {
             mainContent.classList.toggle('main-content-expanded');
         }
 
-        // Responsive navigation handling
+        // Responsive navigation
         function handleResize() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -480,43 +454,44 @@ if (count($name_parts) >= 1) {
         let moves = 0;
         let timeTaken = 0;
         let timerInterval = null;
-        let maxMoves = 8;
-        let maxTime = 25;
+        let maxMoves = 6;
+        let maxTime = 15;
+        let mismatches = 0;
 
         function createCards(difficulty) {
-            let pairCount, rows, cols, distractor;
+            let pairCount, rows, cols, distractorCount;
             switch (difficulty) {
                 case 'easy':
-                    pairCount = 4;
-                    rows = 2;
+                    pairCount = 12;
+                    rows = 6;
                     cols = 4;
-                    maxMoves = 8;
-                    maxTime = 25;
-                    distractor = false;
+                    maxMoves = 6;
+                    maxTime = 15;
+                    distractorCount = 4;
                     break;
                 case 'medium':
-                    pairCount = 7;
-                    rows = 3;
+                    pairCount = 20;
+                    rows = 8;
                     cols = 5;
-                    maxMoves = 12;
-                    maxTime = 40;
-                    distractor = true;
+                    maxMoves = 8;
+                    maxTime = 20;
+                    distractorCount = 6;
                     break;
                 case 'hard':
-                    pairCount = 10;
-                    rows = 4;
-                    cols = 5;
-                    maxMoves = 16;
-                    maxTime = 50;
-                    distractor = false;
+                    pairCount = 30;
+                    rows = 10;
+                    cols = 6;
+                    maxMoves = 10;
+                    maxTime = 25;
+                    distractorCount = 8;
                     break;
                 default:
-                    pairCount = 4;
-                    rows = 2;
+                    pairCount = 12;
+                    rows = 6;
                     cols = 4;
-                    maxMoves = 8;
-                    maxTime = 25;
-                    distractor = false;
+                    maxMoves = 6;
+                    maxTime = 15;
+                    distractorCount = 4;
             }
 
             // Update UI with limits
@@ -524,15 +499,15 @@ if (count($name_parts) >= 1) {
             maxTimeDisplay.innerText = maxTime;
 
             // Set grid layout
-            grid.style.gridTemplateColumns = `repeat(${cols}, 80px)`;
-            grid.style.gridTemplateRows = `repeat(${rows}, 80px)`;
+            grid.style.gridTemplateColumns = `repeat(${cols}, 60px)`;
+            grid.style.gridTemplateRows = `repeat(${rows}, 60px)`;
 
-            // Generate card values (similar emojis for high difficulty)
-            const emojis = ['😊', '🙂', '😃', '😄', '😺', '🐱', '🌟', '✨', '🍎', '🍏'];
+            // Generate card values (similar emojis)
+            const emojis = ['😊', '🙂', '😃', '😄', '😺', '🐱', '🌟', '✨', '🍎', '🍏', '🍊', '🍑', '🍒', '🍓', '🍇', '🍉', '🍍', '🍋', '🍈', '🍐'];
             let selectedEmojis = emojis.slice(0, pairCount);
             let cardValues = [...selectedEmojis, ...selectedEmojis];
-            if (distractor) {
-                cardValues.push('❓'); // Distractor card with no match
+            for (let i = 0; i < distractorCount; i++) {
+                cardValues.push('❓');
             }
 
             // Shuffle cards
@@ -547,7 +522,7 @@ if (count($name_parts) >= 1) {
                 value,
                 element: null,
                 flipped: false,
-                matched: value === '❓' // Distractor can't be matched
+                matched: value === '❓'
             }));
 
             // Clear grid
@@ -557,17 +532,35 @@ if (count($name_parts) >= 1) {
             cards.forEach(card => {
                 const cardElement = document.createElement('div');
                 cardElement.classList.add('memory-card');
+                if (card.matched) {
+                    cardElement.classList.add('distractor');
+                }
                 cardElement.dataset.id = card.id;
                 cardElement.innerText = '';
-                if (card.matched) {
-                    cardElement.style.background = '#ccc';
-                    cardElement.style.cursor = 'default';
-                } else {
+                if (!card.matched) {
                     cardElement.addEventListener('click', () => flipCard(card));
                 }
                 grid.appendChild(cardElement);
                 card.element = cardElement;
             });
+        }
+
+        function randomSwapCards() {
+            if (Math.random() < 0.5) {
+                const unflippedCards = cards.filter(card => !card.flipped && !card.matched);
+                if (unflippedCards.length >= 2) {
+                    const idx1 = Math.floor(Math.random() * unflippedCards.length);
+                    let idx2 = Math.floor(Math.random() * unflippedCards.length);
+                    while (idx2 === idx1) {
+                        idx2 = Math.floor(Math.random() * unflippedCards.length);
+                    }
+                    const card1 = unflippedCards[idx1];
+                    const card2 = unflippedCards[idx2];
+                    const tempValue = card1.value;
+                    card1.value = card2.value;
+                    card2.value = tempValue;
+                }
+            }
         }
 
         function flipCard(card) {
@@ -582,6 +575,7 @@ if (count($name_parts) >= 1) {
                     movesDisplay.innerText = moves;
                     checkMatch();
                 }
+                randomSwapCards();
             }
         }
 
@@ -595,12 +589,13 @@ if (count($name_parts) >= 1) {
                 matchedPairs++;
                 flippedCards = [];
 
-                if (matchedPairs === Math.floor(cards.length / 2)) {
+                if (matchedPairs === Math.floor((cards.length - cards.filter(c => c.value === '❓').length) / 2)) {
                     endGame('win');
                 } else if (moves >= maxMoves) {
                     endGame('Maximum moves exceeded');
                 }
             } else {
+                mismatches++;
                 setTimeout(() => {
                     card1.flipped = false;
                     card2.flipped = false;
@@ -611,8 +606,10 @@ if (count($name_parts) >= 1) {
                     flippedCards = [];
                     if (moves >= maxMoves) {
                         endGame('Maximum moves exceeded');
+                    } else if (mismatches > 0) {
+                        endGame('Mismatch detected');
                     }
-                }, 1000);
+                }, 500);
             }
         }
 
@@ -622,6 +619,10 @@ if (count($name_parts) >= 1) {
             timerInterval = setInterval(() => {
                 timeTaken++;
                 timerDisplay.innerText = timeTaken;
+                if (timeTaken >= maxTime / 2 && maxMoves > 1) {
+                    maxMoves = Math.floor(maxMoves / 2);
+                    maxMovesDisplay.innerText = maxMoves;
+                }
                 if (timeTaken >= maxTime) {
                     endGame('Maximum time exceeded');
                 }
@@ -647,6 +648,7 @@ if (count($name_parts) >= 1) {
             matchedPairs = 0;
             moves = 0;
             timeTaken = 0;
+            mismatches = 0;
             movesDisplay.innerText = moves;
             timerDisplay.innerText = timeTaken;
             stopTimer();
