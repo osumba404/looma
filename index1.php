@@ -197,7 +197,7 @@ if (count($name_parts) >= 1) {
                         </div>
                         <div class="card-value">Ksh<?php echo htmlspecialchars($balance); ?></div>
                         <div class="card-title">Available Balance</div>
-                        <a href="wallet1.php" class="btn btn-sm btn-outline-success">Withdraw Now</a>
+                        <a href="wallet1.php" class="btn btn-sm btn-outline-success">Withdraw</a>
                         <a href="wallet1.php" class="btn btn-sm btn-outline-primary">Deposit</a>
                     </div>
                 </div>
