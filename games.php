@@ -13,7 +13,6 @@ header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
 
 $user_id = $_SESSION['user_id'];
-$full_name = $_SESSION['full_name'];
 $error = '';
 
 // Fetch user data
@@ -36,7 +35,6 @@ $spin_rewards = [];
 $total_spin_points = 0;
 
 try {
-    // Check available spins (e.g., has the user used their registration spin?)
     $stmt = $conn->prepare('SELECT spin_type, COUNT(*) as count FROM spins WHERE user_id = ? GROUP BY spin_type');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
@@ -46,26 +44,20 @@ try {
     }
     $stmt->close();
 
-    // Fetch recent spin rewards
     $stmt = $conn->prepare('SELECT reward, created_at FROM spin_rewards WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
     $spin_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Fetch total points earned from spins
     $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "spin"');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
-    $result = $stmt->get_result();
     $total_spin_points = $result->fetch_assoc()['total_points'] ?? 0;
     $stmt->close();
 } catch (Exception $e) {
     $error .= '<div class="alert alert-danger">Error fetching spin data: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
-
-
-
 
 // Fetch Word Scramble data
 $scramble_games_played = 0;
@@ -73,21 +65,18 @@ $scramble_rewards = [];
 $total_scramble_points = 0;
 
 try {
-    // Fetch total games played for Word Scramble
     $stmt = $conn->prepare('SELECT COUNT(*) as count FROM user_game_history WHERE user_id = ? AND game_type = "word_scramble"');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
     $scramble_games_played = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
     $stmt->close();
 
-    // Fetch recent Word Scramble rewards
     $stmt = $conn->prepare('SELECT reward, created_at FROM scramble_rewards WHERE user_id = ? ORDER BY created_at DESC LIMIT 3');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
     $scramble_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 
-    // Fetch total points earned from Word Scramble
     $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "word_scramble"');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
@@ -98,8 +87,61 @@ try {
     $error .= '<div class="alert alert-danger">Error fetching Word Scramble data: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
 
+// Fetch Memory Match data
+$memory_games_played = 0;
+$memory_rewards = [];
+$total_memory_points = 0;
 
+try {
+    $stmt = $conn->prepare('SELECT COUNT(*) as count FROM user_game_history WHERE user_id = ? AND game_type = "memory_match"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $memory_games_played = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
+    $stmt->close();
 
+    $stmt = $conn->prepare('SELECT reward, created_at FROM game_rewards WHERE user_id = ? AND game_type = "memory_match" ORDER BY created_at DESC LIMIT 3');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $memory_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "memory_match"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $total_memory_points = $result->fetch_assoc()['total_points'] ?? 0;
+    $stmt->close();
+} catch (Exception $e) {
+    $error .= '<div class="alert alert-danger">Error fetching Memory Match data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+}
+
+// Fetch Math Blitz data
+$math_games_played = 0;
+$math_rewards = [];
+$total_math_points = 0;
+
+try {
+    $stmt = $conn->prepare('SELECT COUNT(*) as count FROM user_game_history WHERE user_id = ? AND game_type = "math_blitz"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $math_games_played = $stmt->get_result()->fetch_assoc()['count'] ?? 0;
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT reward, created_at FROM game_rewards WHERE user_id = ? AND game_type = "math_blitz" ORDER BY created_at DESC LIMIT 3');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $math_rewards = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "math_blitz"');
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $total_math_points = $result->fetch_assoc()['total_points'] ?? 0;
+    $stmt->close();
+} catch (Exception $e) {
+    $error .= '<div class="alert alert-danger">Error fetching Math Blitz data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+}
 
 // Get user initials
 $initials = '';
@@ -111,12 +153,36 @@ if (count($name_parts) >= 1) {
     }
 }
 
-// Mock game progress (unchanged)
+// Prepare game progress data from database
 $game_progress = [
-    ['name' => 'Memory Match', 'level' => 2, 'points' => 85, 'max_points' => 100, 'progress' => 85],
-    ['name' => 'Word Scramble', 'round' => 4, 'points' => 60, 'max_points' => 80, 'progress' => 75],
-    ['name' => 'Math Blitz', 'questions' => 15, 'points' => 75, 'max_points' => 90, 'progress' => 83],
-    ['name' => 'Daily Challenge', 'completed' => true, 'points' => 50, 'max_points' => 50, 'progress' => 100]
+    [
+        'name' => 'Memory Match',
+        'games_played' => $memory_games_played,
+        'points' => $total_memory_points,
+        'max_points' => 100,
+        'progress' => min(100, round($total_memory_points / 100 * 100))
+    ],
+    [
+        'name' => 'Math Blitz',
+        'games_played' => $math_games_played,
+        'points' => $total_math_points,
+        'max_points' => 100,
+        'progress' => min(100, round($total_math_points / 100 * 100))
+    ],
+    [
+        'name' => 'Word Scramble',
+        'games_played' => $scramble_games_played,
+        'points' => $total_scramble_points,
+        'max_points' => 100,
+        'progress' => min(100, round($total_scramble_points / 100 * 100))
+    ],
+    [
+        'name' => 'Spin & Earn',
+        'games_played' => $spin_summary['registration'] + $spin_summary['weekly'] + $spin_summary['bet'],
+        'points' => $total_spin_points,
+        'max_points' => 100,
+        'progress' => min(100, round($total_spin_points / 100 * 100))
+    ]
 ];
 
 // Mock achievements (unchanged)
@@ -165,16 +231,13 @@ $achievements = [
         .btn-primary:hover {
             background-color: #0056b3;
         }
-        .spin-details {
+        .game-details {
             font-size: 0.9rem;
         }
-        .scramble-details {
-    font-size: 0.9rem;
-}
     </style>
 </head>
 <body>
-    <!-- Sidebar (unchanged) -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h2>LOOMA</h2>
@@ -209,14 +272,13 @@ $achievements = [
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-        <h2>LOOMA</h2>
+            <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
                     <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
-            
         </div>
 
         <!-- Games Section -->
@@ -227,25 +289,62 @@ $achievements = [
                 <?php endif; ?>
                 <h2 class="mb-4">Featured Games</h2>
                 <div class="row g-4">
-                    <!-- Other game cards (unchanged) -->
+                    <!-- Memory Match -->
                     <div class="col-md-4">
                         <div class="card">
-                            <img src="https://via.placeholder.com/300x150?text=Memory+Match" class="card-img-top" alt="Memory Match">
+                            <img src="memory-game.jpg" class="card-img-top" alt="Memory Match">
                             <div class="card-body">
                                 <h5 class="card-title">Memory Match</h5>
-                                <p class="card-text">Flip cards to find matching pairs and boost your memory skills.</p>
-                                <p class="card-text"><small class="text-muted">3 Levels • 10 Mins • 100 Points</small></p>
+                                <p class="card-text">Flip cards to find matching pairs in three difficulty levels.</p>
+                                <div class="game-details">
+                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($memory_games_played); ?></p>
+                                    <?php if (!empty($memory_rewards)): ?>
+                                        <p><strong>Recent Rewards:</strong></p>
+                                        <ul>
+                                            <?php foreach ($memory_rewards as $reward): ?>
+                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_memory_points); ?></p>
+                                </div>
+                                <p class="card-text"><small class="text-muted">3 Levels • 5-10 Mins • Up to 80 Ksh</small></p>
                                 <a href="memory-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
+                    <!-- Math Blitz -->
                     <div class="col-md-4">
-                        <div class="card scramble-card">
-                            <img src="https://via.placeholder.com/300x150?text=Word+Scramble" class="card-img-top" alt="Word Scramble">
+                        <div class="card">
+                            <img src="math-blitz-game.jpg" class="card-img-top" alt="Math Blitz">
+                            <div class="card-body">
+                                <h5 class="card-title">Math Blitz</h5>
+                                <p class="card-text">Solve 20 math problems under time pressure to earn rewards.</p>
+                                <div class="game-details">
+                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($math_games_played); ?></p>
+                                    <?php if (!empty($math_rewards)): ?>
+                                        <p><strong>Recent Rewards:</strong></p>
+                                        <ul>
+                                            <?php foreach ($math_rewards as $reward): ?>
+                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php endif; ?>
+                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_math_points); ?></p>
+                                </div>
+                                <p class="card-text"><small class="text-muted">20 Questions • 2-5 Mins • Up to 80 Ksh</small></p>
+                                <a href="math-blitz.php" class="btn btn-primary w-100">Play Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Word Scramble -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <img src="word-scramble-game.png" class="card-img-top" alt="Word Scramble">
                             <div class="card-body">
                                 <h5 class="card-title">Word Scramble</h5>
                                 <p class="card-text">Unscramble letters to form words and earn rewards.</p>
-                                <div class="scramble-details">
+                                <div class="game-details">
                                     <p><strong>Games Played:</strong> <?php echo htmlspecialchars($scramble_games_played); ?></p>
                                     <?php if (!empty($scramble_rewards)): ?>
                                         <p><strong>Recent Rewards:</strong></p>
@@ -255,55 +354,21 @@ $achievements = [
                                             <?php endforeach; ?>
                                         </ul>
                                     <?php endif; ?>
-                                    <p><strong>Total Scramble Points:</strong> <?php echo htmlspecialchars($total_scramble_points); ?></p>
+                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_scramble_points); ?></p>
                                 </div>
                                 <p class="card-text"><small class="text-muted">3 Variations • 5-10 Mins • Up to 150 Ksh</small></p>
                                 <a href="word-scramble-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
+                    <!-- Spin & Earn -->
                     <div class="col-md-4">
                         <div class="card">
-                            <img src="https://via.placeholder.com/300x150?text=Math+Blitz" class="card-img-top" alt="Math Blitz">
-                            <div class="card-body">
-                                <h5 class="card-title">Math Blitz</h5>
-                                <p class="card-text">Solve quick math problems to rack up points.</p>
-                                <p class="card-text"><small class="text-muted">20 Questions • 5 Mins • 90 Points</small></p>
-                                <a href="math-blitz-game.php" class="btn btn-primary w-100">Play Now</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="https://via.placeholder.com/300x150?text=Daily+Challenge" class="card-img-top" alt="Daily Challenge">
-                            <div class="card-body">
-                                <h5 class="card-title">History Challenge</h5>
-                                <p class="card-text">A new mini-game every day for bonus points.</p>
-                                <p class="card-text"><small class="text-muted">1 Round • 5 Mins • 50 Points</small></p>
-                                <a href="#" class="btn btn-primary w-100">Play Now</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="https://via.placeholder.com/300x150?text=Trivia+Dash" class="card-img-top" alt="Trivia Dash">
-                            <div class="card-body">
-                                <h5 class="card-title">Geography Trivia</h5>
-                                <p class="card-text">Answer Geo and Environment related Questions.</p>
-                                <p class="card-text"><small class="text-muted">10 Questions • 7 Mins • 70 Points</small></p>
-                                <a href="#" class="btn btn-primary w-100">Play Now</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Updated Spin & Earn Card -->
-                    <div class="col-md-4">
-                        <div class="card spin-card">
-                            <img src="https://via.placeholder.com/300x150?text=Spin+%26+Earn" class="card-img-top" alt="Spin & Earn">
+                            <img src="spin-game.webp" class="card-img-top" alt="Spin & Earn">
                             <div class="card-body">
                                 <h5 class="card-title">Spin & Earn</h5>
-                                <p class="card-text">Spin the wheel to win exciting rewards!</p>
-                                <div class="spin-details">
+                                <p class="card-text">Spin the wheel for a chance at big rewards!</p>
+                                <div class="game-details">
                                     <?php if (!$spin_summary['registration']): ?>
                                         <p><strong>Registration Spin:</strong> Available! Win up to Ksh 250.</p>
                                     <?php else: ?>
@@ -323,7 +388,7 @@ $achievements = [
                                             <?php endforeach; ?>
                                         </ul>
                                     <?php endif; ?>
-                                    <p><strong>Total Spin Points:</strong> <?php echo htmlspecialchars($total_spin_points); ?></p>
+                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_spin_points); ?></p>
                                 </div>
                                 <p class="card-text"><small class="text-muted">Luck-Based • Varies • Up to 600% Profit</small></p>
                                 <a href="spin-game.php" class="btn btn-primary w-100">Play Now</a>
@@ -334,34 +399,23 @@ $achievements = [
             </div>
         </section>
 
-        <!-- Game Progress (unchanged) -->
+        <!-- Game Progress -->
         <section class="game-progress py-4 animate-fadeIn">
             <div class="container">
                 <h2 class="mb-4">Your Game Progress</h2>
                 <div class="card">
                     <div class="card-body">
-                        <?php if (empty($game_progress)): ?>
+                        <?php if (empty($game_progress) || array_sum(array_column($game_progress, 'games_played')) == 0): ?>
                             <p>Start playing games to track your progress!</p>
                         <?php else: ?>
-                            <div class="row sheezy
                             <div class="row">
                                 <?php foreach ($game_progress as $game): ?>
                                     <div class="col-md-6 mb-3">
                                         <div class="progress-card">
                                             <h5><?php echo htmlspecialchars($game['name']); ?></h5>
                                             <p class="text-muted">
-                                                <?php
-                                                if (isset($game['level'])) {
-                                                    echo 'Level ' . $game['level'];
-                                                } elseif (isset($game['round'])) {
-                                                    echo 'Round ' . $game['round'];
-                                                } elseif (isset($game['questions'])) {
-                                                    echo $game['questions'] . ' Questions';
-                                                } else {
-                                                    echo 'Completed';
-                                                }
-                                                ?>
-                                                - <?php echo $game['points'] . '/' . $game['max_points']; ?> Points
+                                                Games Played: <?php echo $game['games_played']; ?> - 
+                                                <?php echo $game['points'] . '/' . $game['max_points']; ?> Points
                                             </p>
                                             <div class="progress">
                                                 <div class="progress-bar bg-primary" role="progressbar" style="width: <?php echo $game['progress']; ?>%;" aria-valuenow="<?php echo $game['progress']; ?>" aria-valuemin="0" aria-valuemax="100">
@@ -378,7 +432,7 @@ $achievements = [
             </div>
         </section>
 
-        <!-- Achievements (unchanged) -->
+        <!-- Achievements -->
         <section class="achievements py-4 animate-fadeIn">
             <div class="container">
                 <h2 class="mb-4">Recent Achievements</h2>
@@ -432,29 +486,32 @@ $achievements = [
             <span>Account</span>
         </a>
         <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i> 
+            <i class="fas fa-sign-out-alt"></i>
             <span>Log out</span>
         </a>
     </div>
 
     <script>
-        // Toggle sidebar for desktop and mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('active');
-            mainContent.classList.toggle('main-content-expanded');
+            if (window.innerWidth > 992) {
+                sidebar.classList.toggle('sidebar-collapsed');
+                mainContent.classList.toggle('main-content-expanded');
+            } else {
+                sidebar.classList.toggle('active');
+            }
         }
 
-        // Responsive navigation handling
         function handleResize() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
+            if (window.innerWidth <= 992) {
+                sidebar.classList.remove('active', 'sidebar-collapsed');
                 mainContent.classList.remove('main-content-expanded');
             } else {
-                sidebar.classList.add('active'); // Show sidebar on desktop
+                sidebar.classList.remove('active');
+                sidebar.classList.remove('sidebar-collapsed');
                 mainContent.classList.remove('main-content-expanded');
             }
         }
@@ -462,8 +519,6 @@ $achievements = [
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 
-
-        // Add animation classes as elements come into view (unchanged)
         const animateElements = document.querySelectorAll('.animate-fadeIn');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {

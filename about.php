@@ -161,26 +161,38 @@
     </div>
 
     <script>
-        // Toggle sidebar for desktop and mobile
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('active');
-            mainContent.classList.toggle('main-content-expanded');
-        }
+        
+    function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    // Toggle collapsed state for desktop, active state for mobile
+    if (window.innerWidth > 992) {
+        sidebar.classList.toggle('sidebar-collapsed');
+        mainContent.classList.toggle('main-content-expanded');
+    } else {
+        sidebar.classList.toggle('active');
+    }
+}
 
-        // Responsive navigation handling
-        function handleResize() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove('active'); // Ensure sidebar is hidden on mobile
-                mainContent.classList.remove('main-content-expanded');
-            } else {
-                sidebar.classList.add('active'); // Show sidebar on desktop
-                mainContent.classList.remove('main-content-expanded');
-            }
-        }
+function handleResize() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    if (window.innerWidth <= 992) {
+        // Mobile: hide sidebar by default, remove collapsed state
+        sidebar.classList.remove('active', 'sidebar-collapsed');
+        mainContent.classList.remove('main-content-expanded');
+    } else {
+        // Desktop: show sidebar (non-collapsed by default), ensure active is removed
+        sidebar.classList.remove('active');
+        sidebar.classList.remove('sidebar-collapsed'); // Ensure sidebar is open by default
+        mainContent.classList.remove('main-content-expanded');
+    }
+}
+
+window.addEventListener('resize', handleResize);
+document.addEventListener('DOMContentLoaded', handleResize);
 
         // Run on load and resize
         window.addEventListener('resize', handleResize);

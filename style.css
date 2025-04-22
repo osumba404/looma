@@ -1,10 +1,15 @@
+/* Global reset and box-sizing */
+* {
+    box-sizing: border-box;
+}
+
 :root {
     --primary-color: #6c5ce7;
     --secondary-color: #00cec9;
     --accent-color: #fd79a8;
     --dark-color: #2d3436;
     --light-color: #f5f6fa;
-    --sidebar-width: 280 280px;
+    --sidebar-width: 280px;
     --sidebar-collapsed-width: 80px;
 }
 
@@ -16,6 +21,7 @@ body {
     color: var(--dark-color);
     display: flex;
     min-height: 100vh;
+    flex-direction: row;
 }
 
 /* Sidebar Styles */
@@ -26,13 +32,13 @@ body {
     position: fixed;
     height: 100vh;
     padding: 20px 0;
-    transition: all 0.3s;
+    transition: width 0.3s;
     z-index: 1000;
     box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
 }
 
-.sidebar-collapsed {
+.sidebar.sidebar-collapsed {
     width: var(--sidebar-collapsed-width);
 }
 
@@ -96,11 +102,15 @@ body {
 .main-content {
     flex: 1;
     margin-left: var(--sidebar-width);
-    transition: all 0.3s;
+    transition: margin-left 0.3s;
+    z-index: 1;
+    min-width: calc(100vw - var(--sidebar-width));
+    position: relative;
 }
 
-.main-content-expanded {
+.main-content.main-content-expanded {
     margin-left: var(--sidebar-collapsed-width);
+    min-width: calc(100vw - var(--sidebar-collapsed-width));
 }
 
 .top-navbar {
@@ -156,7 +166,7 @@ body {
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
     padding: 10px 0;
-    justify-content: space-around; /* Ensure even spacing */
+    justify-content: space-around;
 }
 
 .mobile-nav-item {
@@ -525,20 +535,27 @@ body {
 /* Responsive Styles */
 @media (max-width: 992px) {
     .sidebar {
-        display: none; /* Hide sidebar completely on mobile */
+        display: none;
+        transform: translateX(-100%);
+        transition: transform 0.3s, width 0.3s;
     }
     
     .sidebar.active {
-        display: block; /* Show sidebar only when toggled active */
+        display: block;
         transform: translateX(0);
     }
     
     .main-content {
-        margin-left: 0; /* Remove sidebar margin on mobile */
+        margin-left: 0;
+        min-width: 100vw;
+    }
+
+    .content-container {
+        padding-bottom: 60px;
     }
 
     .mobile-bottom-nav {
-        display: flex; /* Show mobile navigation */
+        display: flex;
     }
     
     .step-line {

@@ -375,7 +375,7 @@ if (count($name_parts) >= 1) {
     </div>
 
     <script>
-        // Toggle sidebar for desktop and mobile
+       // Toggle sidebar for desktop and mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
