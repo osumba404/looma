@@ -7,9 +7,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="style.css" rel="stylesheet">
     <style>
 
+        .modal {
+            z-index: 1055 !important; 
+        }
+
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
     </style>
 </head>
 <body>
@@ -159,7 +170,37 @@ if (count($name_parts) >= 1) {
                         </div>
                         <div class="card-value">Ksh<?php echo htmlspecialchars($balance); ?></div>
                         <div class="card-title">Available Balance</div>
-                        <a href="#" class="btn btn-sm btn-outline-success">Withdraw Now</a>
+                        <a href="#" class="btn btn-sm btn-outline-success" data-type="withdraw">Withdraw Now</a>
+                        <a href="#" class="btn btn-sm btn-outline-primary" data-type="deposit">Deposit</a>
+                    </div>
+                </div>
+                <div class="modal fade" id="transactionModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalTitle">Transaction</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="transactionForm">
+                                    <div class="mb-3">
+                                        <label for="phoneNumber" class="form-label">M-Pesa Phone Number</label>
+                                        <input type="tel" class="form-control" id="phoneNumber" 
+                                            placeholder="2547XXXXXXXX" pattern="2547\d{8}" required>
+                                        <div class="form-text">Format: 2547XXXXXXXX</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="amount" class="form-label">Amount (Ksh)</label>
+                                        <input type="number" class="form-control" id="amount" 
+                                            min="10" step="10" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" id="transactBtn">Transact</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-4 delay-2">
@@ -267,6 +308,87 @@ if (count($name_parts) >= 1) {
         animateElements.forEach(element => {
             observer.observe(element);
         });
+
+
+
+
+//Transact
+        document.addEventListener('DOMContentLoaded', function() {
+                const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'));
+                let transactionType = '';
+
+                // Withdraw/Deposit button click handlers
+                document.querySelectorAll('[data-type]').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        transactionType = this.dataset.type; // Get from data-type attribute
+                        document.getElementById('modalTitle').textContent = transactionType.charAt(0).toUpperCase() + transactionType.slice(1);
+                        document.getElementById('transactBtn').textContent = `${transactionType.charAt(0).toUpperCase() + transactionType.slice(1)} Now`;
+                        document.getElementById('transactionForm').reset();   //resets form
+                        transactionModal.show();    //shows modal
+                    });
+                });
+
+                // Transact button handler
+                document.getElementById('transactBtn').addEventListener('click', function() {
+                    const phoneNumber = document.getElementById('phoneNumber').value;
+                    const amount = document.getElementById('amount').value;
+
+                    if (!/^2547\d{8}$/.test(phoneNumber)) {
+                        alert('Please enter a valid M-Pesa number starting with 2547 followed by 8 digits');
+                        return;
+                    }
+
+                    if (amount < 10) {
+                        alert('Minimum amount is Ksh 500');
+                        return;
+                    }
+
+                    // Transaction logic here (API call to M-Pesa)
+                    console.log(`Initiating ${transactionType} of Ksh${amount} to ${phoneNumber}`);
+                    
+                    // Using fetch API to send data to server
+                    fetch('/includes/mpesa.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type: transactionType,
+                            phone: phoneNumber,
+                            amount: amount
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(`Transaction successful! ${data.message}`);
+                            transactionModal.hide();
+                            // Update balance on page
+                        } else {
+                            alert(`Transaction failed: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Transaction failed. Please try again.');
+                    });
+                });
+
+                // Input validation
+                document.getElementById('phoneNumber').addEventListener('input', validateInputs);
+                document.getElementById('amount').addEventListener('input', validateInputs);
+
+                function validateInputs() {
+                    const phoneValid = /^2547\d{8}$/.test(document.getElementById('phoneNumber').value);
+                    const amountValid = document.getElementById('amount').value >= 10;
+                    document.getElementById('transactBtn').disabled = !(phoneValid && amountValid);
+                }
+                });
     </script>
+    <!-- Bootstrap dependencies -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 </body>
 </html>
