@@ -39,7 +39,7 @@ try {
 // Check if user data was fetched successfully
 if (!$user) {
     $error .= '<div class="alert alert-danger">User not found or invalid session.</div>';
-    $user = ['username' => 'Guest', 'full_name' => '']; // Fallback
+    $user = ['username' => 'Guest', 'full_name' => ''];
 }
 
 // Ensure game_rewards table exists
@@ -96,9 +96,7 @@ try {
         if ($status === 'win') {
             // Define game parameters
             $base_rewards = ['easy' => 25, 'medium' => 50, 'hard' => 80];
-            $min_correct = ['easy' => 15, 'medium' => 18, 'hard' => 19];
-            $max_attempts = ['easy' => 20, 'medium' => 15, 'hard' => 12];
-            $max_time = ['easy' => 120, 'medium' => 90, 'hard' => 60];
+            $min_correct = ['easy' => 29, 'medium' => 29, 'hard' => 29];
 
             if (isset($base_rewards[$difficulty]) && $correct_answers >= $min_correct[$difficulty]) {
                 // Check daily reward cap (100 Ksh)
@@ -117,7 +115,7 @@ try {
                 } else {
                     // Calculate reward with diminishing returns
                     $win_count = $conn->prepare('SELECT COUNT(*) as wins FROM game_rewards WHERE user_id = ? AND game_type = ? AND DATE(created_at) = ?');
-                    if ($win_count === false) {
+                    if ($stmt === false) {
                         throw new Exception('Prepare failed for win count: ' . $conn->error);
                     }
                     $win_count->bind_param('iss', $user_id, $game_type, $today);
@@ -126,9 +124,6 @@ try {
                     $win_count->close();
 
                     $win_amount = $base_rewards[$difficulty] * pow(0.8, $wins_today); // 20% reduction per win
-                    $attempt_penalty = max(0, $attempts - $max_attempts[$difficulty] / 2) * 1.0;
-                    $time_penalty = max(0, $time_taken - $max_time[$difficulty] / 2) * 0.2;
-                    $win_amount = max(5, $win_amount - $attempt_penalty - $time_penalty);
                     $win_amount = min($win_amount, 100 - $total_rewards); // Enforce daily cap
                     $points_earned = $win_amount / 10;
 
@@ -209,8 +204,6 @@ if (count($name_parts) >= 1) {
             --accent-color: #fd79a8;
             --dark-color: #2d3436;
             --light-color: #f5f6fa;
-            --sidebar-width: 280px;
-            --sidebar-collapsed-width: 80px;
         }
         .game-section {
             padding: 2rem 0;
@@ -221,20 +214,20 @@ if (count($name_parts) >= 1) {
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 1rem;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             text-align: center;
         }
         .answer-input {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-align: center;
         }
         .game-btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 5px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
@@ -247,18 +240,11 @@ if (count($name_parts) >= 1) {
         }
         .game-info {
             margin-bottom: 1rem;
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--dark-color);
         }
         .alert {
             margin-top: 1rem;
-        }
-        .card {
-            border-radius: 10px;
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
         }
         .modal-content {
             border-radius: 10px;
@@ -267,8 +253,6 @@ if (count($name_parts) >= 1) {
         .modal-header {
             background: var(--primary-color);
             color: white;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
         }
         .modal-title {
             font-weight: 600;
@@ -276,17 +260,32 @@ if (count($name_parts) >= 1) {
         .modal-body {
             font-size: 1.2rem;
             text-align: center;
-            color: var(--dark-color);
         }
         .modal-footer .btn {
             background-color: var(--secondary-color);
             color: white;
             border: none;
         }
+        @media (max-width: 576px) {
+            .question-box {
+                font-size: 1.1rem;
+                padding: 0.8rem;
+            }
+            .answer-input {
+                font-size: 1rem;
+            }
+            .game-btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+            .game-info {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Desktop Sidebar -->
+    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-brand">
             <h2>LOOMA</h2>
@@ -328,27 +327,27 @@ if (count($name_parts) >= 1) {
                 <?php echo $result; ?>
                 <h2 class="mb-4">Math Blitz</h2>
                 <div class="row justify-content-center">
-                    <div class="col-md-6">
+                    <div class="col-md-6 col-sm-12">
                         <div class="card">
                             <div class="card-body text-center">
                                 <form method="POST" id="gameForm">
                                     <div class="mb-3">
                                         <label class="form-label">Difficulty:</label>
                                         <select class="form-select" name="difficulty" id="difficulty">
-                                            <option value="easy">Easy (15/20 correct, 20 attempts, 120s)</option>
-                                            <option value="medium">Medium (18/20 correct, 15 attempts, 90s)</option>
-                                            <option value="hard">Hard (19/20 correct, 12 attempts, 60s)</option>
+                                            <option value="easy">Easy (29/30 correct, 10 attempts, 30s)</option>
+                                            <option value="medium">Medium (29/30 correct, 8 attempts, 25s)</option>
+                                            <option value="hard">Hard (29/30 correct, 6 attempts, 20s)</option>
                                         </select>
                                     </div>
                                     <button type="button" class="game-btn" id="startGame">Start Game</button>
                                 </form>
                                 <div class="game-info">
-                                    <span>Correct: <span id="correctAnswers">0</span>/<span id="minCorrect">15</span></span> |
-                                    <span>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">20</span></span> |
-                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">120</span>s</span>
+                                    <span>Correct: <span id="correctAnswers">0</span>/<span id="minCorrect">29</span></span> |
+                                    <span>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">10</span></span> |
+                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">30</span>s</span>
                                 </div>
                                 <div id="questionBox" class="question-box d-none"></div>
-                                <input type="number" id="answerInput" class="form-control answer-input d-none mb-3" placeholder="Enter answer">
+                                <input type="number" id="answerInput" class="form-control answer-input d-none mb-3" placeholder="Enter answer" step="0.01">
                                 <button type="button" id="submitAnswer" class="game-btn d-none">Submit</button>
                                 <form method="POST" id="resultForm" style="display: none;">
                                     <input type="hidden" name="game_result" value="1">
@@ -407,30 +406,12 @@ if (count($name_parts) >= 1) {
 
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-bottom-nav">
-        <a href="index1.php" class="mobile-nav-item">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="games.php" class="mobile-nav-item active">
-            <i class="fas fa-gamepad"></i>
-            <span>Games</span>
-        </a>
-        <a href="wallet1.php" class="mobile-nav-item">
-            <i class="fas fa-wallet"></i>
-            <span>Earnings</span>
-        </a>
-        <a href="referrals.php" class="mobile-nav-item">
-            <i class="fas fa-users"></i>
-            <span>Refer</span>
-        </a>
-        <a href="settings.php" class="mobile-nav-item">
-            <i class="fas fa-user"></i>
-            <span>Account</span>
-        </a>
-        <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Log out</span>
-        </a>
+        <a href="index1.php" class="mobile-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="games.php" class="mobile-nav-item active"><i class="fas fa-gamepad"></i><span>Games</span></a>
+        <a href="wallet1.php" class="mobile-nav-item"><i class="fas fa-wallet"></i><span>Earnings</span></a>
+        <a href="referrals.php" class="mobile-nav-item"><i class="fas fa-users"></i><span>Refer</span></a>
+        <a href="settings.php" class="mobile-nav-item"><i class="fas fa-user"></i><span>Account</span></a>
+        <a href="logout.php" class="mobile-nav-item"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -491,9 +472,35 @@ if (count($name_parts) >= 1) {
         let attempts = 0;
         let timeTaken = 0;
         let timerInterval = null;
-        let minCorrect = 15;
-        let maxAttempts = 20;
-        let maxTime = 120;
+        let minCorrect = 29;
+        let maxAttempts = 10;
+        let maxTime = 30;
+        let incorrectAnswers = 0;
+
+        function generateDistractors(answer) {
+            const distractors = [];
+            for (let i = 0; i < 2; i++) {
+                let distractor;
+                do {
+                    const offset = (Math.random() * 0.1 + 0.01) * (Math.random() < 0.5 ? 1 : -1);
+                    distractor = Number((answer + answer * offset).toFixed(2));
+                } while (distractor === answer || distractors.includes(distractor));
+                distractors.push(distractor);
+            }
+            return distractors;
+        }
+
+        function randomSwapQuestions() {
+            if (Math.random() < 0.5 && currentQuestion < questions.length - 1) {
+                const unansweredIndices = questions
+                    .map((q, i) => (i > currentQuestion ? i : -1))
+                    .filter(i => i !== -1);
+                if (unansweredIndices.length > 0) {
+                    const swapIdx = unansweredIndices[Math.floor(Math.random() * unansweredIndices.length)];
+                    [questions[currentQuestion], questions[swapIdx]] = [questions[swapIdx], questions[currentQuestion]];
+                }
+            }
+        }
 
         function generateQuestions(difficulty) {
             questions = [];
@@ -502,34 +509,44 @@ if (count($name_parts) >= 1) {
                 medium: ['+', '-', '*'],
                 hard: ['+', '-', '*', '/']
             };
-            const maxNumber = { easy: 10, medium: 50, hard: 100 };
+            const maxNumber = { easy: 100, medium: 200, hard: 500 };
 
-            for (let i = 0; i < 20; i++) {
+            for (let i = 0; i < 30; i++) {
                 const op = operations[difficulty][Math.floor(Math.random() * operations[difficulty].length)];
-                let num1 = Math.floor(Math.random() * maxNumber[difficulty]) + 1;
-                let num2 = Math.floor(Math.random() * maxNumber[difficulty]) + 1;
+                let num1 = (Math.random() * maxNumber[difficulty]).toFixed(2);
+                let num2 = (Math.random() * maxNumber[difficulty]).toFixed(2);
                 let question, answer;
 
                 if (op === '/' && difficulty === 'hard') {
-                    // Ensure clean division
-                    const product = num1 * num2;
+                    const product = (num1 * num2).toFixed(2);
                     question = `${product} ÷ ${num1} = ?`;
-                    answer = num2;
+                    answer = Number(num2);
+                } else if (op === '*' && difficulty === 'medium') {
+                    num1 = (Math.random() * 10).toFixed(2);
+                    num2 = (Math.random() * 10).toFixed(2);
+                    question = `${num1} ${op} ${num2} = ?`;
+                    answer = Number((num1 * num2).toFixed(2));
+                } else if (op === '-' && difficulty === 'easy') {
+                    if (Math.random() < 0.5) {
+                        num1 = (Math.random() * maxNumber[difficulty] * -1).toFixed(2);
+                    }
+                    question = `${num1} ${op} ${num2} = ?`;
+                    answer = Number((num1 - num2).toFixed(2));
                 } else {
                     question = `${num1} ${op} ${num2} = ?`;
-                    answer = eval(`${num1} ${op} ${num2}`);
-                    if (op === '/') {
-                        answer = Math.round(answer * 100) / 100; // Round division to 2 decimals
-                    }
+                    answer = Number(eval(`${num1} ${op} ${num2}`).toFixed(2));
                 }
 
-                questions.push({ question, answer });
+                const distractors = generateDistractors(answer);
+                questions.push({ question, answer, distractors });
             }
         }
 
         function showQuestion() {
-            if (currentQuestion < 20) {
-                questionBox.innerText = questions[currentQuestion].question;
+            if (currentQuestion < 30 && attempts < maxAttempts && timeTaken < maxTime) {
+                const q = questions[currentQuestion];
+                const allAnswers = [q.answer, ...q.distractors].sort(() => Math.random() - 0.5);
+                questionBox.innerHTML = `${q.question}<br><small>Possible answers: ${allAnswers.join(', ')}</small>`;
                 answerInput.value = '';
                 answerInput.focus();
             } else {
@@ -543,6 +560,10 @@ if (count($name_parts) >= 1) {
             timerInterval = setInterval(() => {
                 timeTaken++;
                 timerDisplay.innerText = timeTaken;
+                if (timeTaken >= maxTime / 2 && maxAttempts > 1) {
+                    maxAttempts = Math.floor(maxAttempts / 2);
+                    maxAttemptsDisplay.innerText = maxAttempts;
+                }
                 if (timeTaken >= maxTime) {
                     endGame('Maximum time exceeded');
                 }
@@ -554,10 +575,10 @@ if (count($name_parts) >= 1) {
         }
 
         function checkGameEnd() {
-            if (correctAnswers >= minCorrect) {
+            if (correctAnswers >= minCorrect && incorrectAnswers === 0) {
                 endGame('win');
-            } else if (attempts >= maxAttempts || currentQuestion >= 20) {
-                endGame('Insufficient correct answers or maximum attempts exceeded');
+            } else {
+                endGame('Insufficient correct answers, maximum attempts exceeded, or incorrect answer');
             }
         }
 
@@ -580,6 +601,7 @@ if (count($name_parts) >= 1) {
             correctAnswers = 0;
             attempts = 0;
             timeTaken = 0;
+            incorrectAnswers = 0;
             correctDisplay.innerText = correctAnswers;
             attemptsDisplay.innerText = attempts;
             timerDisplay.innerText = timeTaken;
@@ -593,19 +615,19 @@ if (count($name_parts) >= 1) {
             resetGame();
             switch (difficultySelect.value) {
                 case 'easy':
-                    minCorrect = 15;
-                    maxAttempts = 20;
-                    maxTime = 120;
+                    minCorrect = 29;
+                    maxAttempts = 10;
+                    maxTime = 30;
                     break;
                 case 'medium':
-                    minCorrect = 18;
-                    maxAttempts = 15;
-                    maxTime = 90;
+                    minCorrect = 29;
+                    maxAttempts = 8;
+                    maxTime = 25;
                     break;
                 case 'hard':
-                    minCorrect = 19;
-                    maxAttempts = 12;
-                    maxTime = 60;
+                    minCorrect = 29;
+                    maxAttempts = 6;
+                    maxTime = 20;
                     break;
             }
             minCorrectDisplay.innerText = minCorrect;
@@ -631,9 +653,12 @@ if (count($name_parts) >= 1) {
                 if (Math.abs(userAnswer - correctAnswer) < 0.01) {
                     correctAnswers++;
                     correctDisplay.innerText = correctAnswers;
+                } else {
+                    incorrectAnswers++;
                 }
 
                 currentQuestion++;
+                randomSwapQuestions();
                 showQuestion();
             }
         });
