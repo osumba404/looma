@@ -269,7 +269,7 @@ $achievements = [
                                 <h5 class="card-title">Math Blitz</h5>
                                 <p class="card-text">Solve quick math problems to rack up points.</p>
                                 <p class="card-text"><small class="text-muted">20 Questions • 5 Mins • 90 Points</small></p>
-                                <a href="#" class="btn btn-primary w-100">Play Now</a>
+                                <a href="math-blitz-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>

@@ -42,7 +42,7 @@ if (!$user) {
     $user = ['username' => 'Guest', 'full_name' => '']; // Fallback
 }
 
-// Create game_rewards table if it doesn't exist
+// Ensure game_rewards table exists
 try {
     $conn->query("
         CREATE TABLE IF NOT EXISTS `game_rewards` (
@@ -80,83 +80,98 @@ try {
     $error = '<div class="alert alert-danger">Error initializing wallet: ' . htmlspecialchars($e->getMessage()) . '</div>';
 }
 
-// Handle Memory Match game logic
-$game_type = 'memory_match';
+// Handle Math Blitz game logic
+$game_type = 'math_blitz';
 $difficulty = isset($_POST['difficulty']) ? $_POST['difficulty'] : 'easy';
 $win_amount = 0;
 $points_earned = 0;
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['game_result'])) {
-        $moves = intval($_POST['moves']);
+        $correct_answers = intval($_POST['correct_answers']);
+        $attempts = intval($_POST['attempts']);
         $time_taken = floatval($_POST['time_taken']);
         $status = $_POST['status'];
 
         if ($status === 'win') {
-            // Calculate rewards
-            $base_rewards = [
-                'easy' => 25,
-                'medium' => 50,
-                'hard' => 80
-            ];
-            $max_moves = [
-                'easy' => 8,
-                'medium' => 12,
-                'hard' => 16
-            ];
-            $max_time = [
-                'easy' => 25,
-                'medium' => 40,
-                'hard' => 50
-            ];
+            // Define game parameters
+            $base_rewards = ['easy' => 25, 'medium' => 50, 'hard' => 80];
+            $min_correct = ['easy' => 15, 'medium' => 18, 'hard' => 19];
+            $max_attempts = ['easy' => 20, 'medium' => 15, 'hard' => 12];
+            $max_time = ['easy' => 120, 'medium' => 90, 'hard' => 60];
 
-            if (isset($base_rewards[$difficulty])) {
-                $win_amount = $base_rewards[$difficulty];
-                $move_penalty = max(0, $moves - $max_moves[$difficulty] / 2) * 1.5;
-                $time_penalty = max(0, $time_taken - $max_time[$difficulty] / 2) * 0.3;
-                $win_amount = max(5, $win_amount - $move_penalty - $time_penalty);
-                $points_earned = $win_amount / 10;
-
-                // Update wallet
-                $stmt = $conn->prepare('UPDATE wallet SET balance = balance + ?, last_interact = CURRENT_TIMESTAMP WHERE user_id = ?');
+            if (isset($base_rewards[$difficulty]) && $correct_answers >= $min_correct[$difficulty]) {
+                // Check daily reward cap (100 Ksh)
+                $today = date('Y-m-d');
+                $stmt = $conn->prepare('SELECT SUM(reward) as total FROM game_rewards WHERE user_id = ? AND game_type = ? AND DATE(created_at) = ?');
                 if ($stmt === false) {
-                    throw new Exception('Prepare failed for wallet update: ' . $conn->error);
+                    throw new Exception('Prepare failed for reward check: ' . $conn->error);
                 }
-                $stmt->bind_param('di', $win_amount, $user_id);
+                $stmt->bind_param('iss', $user_id, $game_type, $today);
                 $stmt->execute();
+                $total_rewards = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
                 $stmt->close();
 
-                // Update user_game_history
-                $stmt = $conn->prepare('INSERT INTO user_game_history (user_id, game_type, points_earned) VALUES (?, ?, ?)');
-                if ($stmt === false) {
-                    throw new Exception('Prepare failed for game history: ' . $conn->error);
-                }
-                $game_type_value = $game_type;
-                $stmt->bind_param('isd', $user_id, $game_type_value, $points_earned);
-                $stmt->execute();
-                $stmt->close();
+                if ($total_rewards >= 100) {
+                    $error = '<div class="alert alert-warning">Daily reward limit of 100 Ksh reached for Math Blitz.</div>';
+                } else {
+                    // Calculate reward with diminishing returns
+                    $win_count = $conn->prepare('SELECT COUNT(*) as wins FROM game_rewards WHERE user_id = ? AND game_type = ? AND DATE(created_at) = ?');
+                    if ($win_count === false) {
+                        throw new Exception('Prepare failed for win count: ' . $conn->error);
+                    }
+                    $win_count->bind_param('iss', $user_id, $game_type, $today);
+                    $win_count->execute();
+                    $wins_today = $win_count->get_result()->fetch_assoc()['wins'];
+                    $win_count->close();
 
-                // Update points table
-                $stmt = $conn->prepare('INSERT INTO points (user_id, points) VALUES (?, ?) ON DUPLICATE KEY UPDATE points = points + ?');
-                if ($stmt === false) {
-                    throw new Exception('Prepare failed for points update: ' . $conn->error);
-                }
-                $stmt->bind_param('iid', $user_id, $points_earned, $points_earned);
-                $stmt->execute();
-                $stmt->close();
+                    $win_amount = $base_rewards[$difficulty] * pow(0.8, $wins_today); // 20% reduction per win
+                    $attempt_penalty = max(0, $attempts - $max_attempts[$difficulty] / 2) * 1.0;
+                    $time_penalty = max(0, $time_taken - $max_time[$difficulty] / 2) * 0.2;
+                    $win_amount = max(5, $win_amount - $attempt_penalty - $time_penalty);
+                    $win_amount = min($win_amount, 100 - $total_rewards); // Enforce daily cap
+                    $points_earned = $win_amount / 10;
 
-                // Insert into game_rewards table
-                $stmt = $conn->prepare('INSERT INTO game_rewards (user_id, game_type, reward) VALUES (?, ?, ?)');
-                if ($stmt === false) {
-                    throw new Exception('Prepare failed for game rewards: ' . $conn->error);
-                }
-                $stmt->bind_param('isd', $user_id, $game_type, $win_amount);
-                $stmt->execute();
-                $stmt->close();
+                    // Update wallet
+                    $stmt = $conn->prepare('UPDATE wallet SET balance = balance + ?, last_interact = CURRENT_TIMESTAMP WHERE user_id = ?');
+                    if ($stmt === false) {
+                        throw new Exception('Prepare failed for wallet update: ' . $conn->error);
+                    }
+                    $stmt->bind_param('di', $win_amount, $user_id);
+                    $stmt->execute();
+                    $stmt->close();
 
-                $result = '<script>showWinModal(' . $win_amount . ');</script>';
+                    // Update user_game_history
+                    $stmt = $conn->prepare('INSERT INTO user_game_history (user_id, game_type, points_earned) VALUES (?, ?, ?)');
+                    if ($stmt === false) {
+                        throw new Exception('Prepare failed for game history: ' . $conn->error);
+                    }
+                    $stmt->bind_param('isd', $user_id, $game_type, $points_earned);
+                    $stmt->execute();
+                    $stmt->close();
+
+                    // Update points table
+                    $stmt = $conn->prepare('INSERT INTO points (user_id, points) VALUES (?, ?) ON DUPLICATE KEY UPDATE points = points + ?');
+                    if ($stmt === false) {
+                        throw new Exception('Prepare failed for points update: ' . $conn->error);
+                    }
+                    $stmt->bind_param('iid', $user_id, $points_earned, $points_earned);
+                    $stmt->execute();
+                    $stmt->close();
+
+                    // Insert into game_rewards
+                    $stmt = $conn->prepare('INSERT INTO game_rewards (user_id, game_type, reward) VALUES (?, ?, ?)');
+                    if ($stmt === false) {
+                        throw new Exception('Prepare failed for game rewards: ' . $conn->error);
+                    }
+                    $stmt->bind_param('isd', $user_id, $game_type, $win_amount);
+                    $stmt->execute();
+                    $stmt->close();
+
+                    $result = '<script>showWinModal(' . $win_amount . ');</script>';
+                }
             } else {
-                $error = '<div class="alert alert-danger">Invalid difficulty level.</div>';
+                $error = '<div class="alert alert-danger">Invalid difficulty or insufficient correct answers.</div>';
             }
         } else {
             $result = '<script>showGameOverModal("' . htmlspecialchars($status) . '");</script>';
@@ -182,7 +197,7 @@ if (count($name_parts) >= 1) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Looma | Memory Match</title>
+    <title>Looma | Math Blitz</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -200,32 +215,18 @@ if (count($name_parts) >= 1) {
         .game-section {
             padding: 2rem 0;
         }
-        .memory-grid {
-            display: grid;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-        .memory-card {
-            width: 80px;
-            height: 80px;
+        .question-box {
             background: var(--light-color);
             border: 2px solid var(--dark-color);
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            cursor: pointer;
-            transition: transform 0.3s ease;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
         }
-        .memory-card.flipped, .memory-card.matched {
-            background: var(--secondary-color);
-            color: white;
-            transform: rotateY(180deg);
-        }
-        .memory-card.matched {
-            background: var(--accent-color);
+        .answer-input {
+            font-size: 1.2rem;
+            text-align: center;
         }
         .game-btn {
             background-color: var(--primary-color);
@@ -293,10 +294,10 @@ if (count($name_parts) >= 1) {
         </div>
         <nav class="nav flex-column">
             <a href="index1.php" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
-            <a href="games.php" class="nav-link active"><i class="fas fa-gamepad"></i><span>Games</span></a>
+            <a href="games.php" class="nav-link"><i class="fas fa-gamepad"></i><span>Games</span></a>
             <a href="questions.php" class="nav-link"><i class="fas fa-book"></i><span>Quizes</span></a>
             <a href="wallet1.php" class="nav-link"><i class="fas fa-chart-line"></i><span>Earnings</span></a>
-            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>           
+            <a href="referrals.php" class="nav-link"><i class="fas fa-users"></i><span>Referrals</span></a>
             <a href="settings.php" class="nav-link"><i class="fas fa-cog"></i><span>Settings</span></a>
             <a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i><span>Log out</span></a>
         </nav>
@@ -304,7 +305,7 @@ if (count($name_parts) >= 1) {
             <p>© 2025 Looma</p>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
@@ -325,7 +326,7 @@ if (count($name_parts) >= 1) {
                     <?php echo $error; ?>
                 <?php endif; ?>
                 <?php echo $result; ?>
-                <h2 class="mb-4">Memory Match</h2>
+                <h2 class="mb-4">Math Blitz</h2>
                 <div class="row justify-content-center">
                     <div class="col-md-6">
                         <div class="card">
@@ -334,22 +335,26 @@ if (count($name_parts) >= 1) {
                                     <div class="mb-3">
                                         <label class="form-label">Difficulty:</label>
                                         <select class="form-select" name="difficulty" id="difficulty">
-                                            <option value="easy">Easy (4x2, 8 moves, 25s)</option>
-                                            <option value="medium">Medium (5x3, 12 moves, 40s)</option>
-                                            <option value="hard">Hard (5x4, 16 moves, 50s)</option>
+                                            <option value="easy">Easy (15/20 correct, 20 attempts, 120s)</option>
+                                            <option value="medium">Medium (18/20 correct, 15 attempts, 90s)</option>
+                                            <option value="hard">Hard (19/20 correct, 12 attempts, 60s)</option>
                                         </select>
                                     </div>
                                     <button type="button" class="game-btn" id="startGame">Start Game</button>
                                 </form>
                                 <div class="game-info">
-                                    <span>Moves: <span id="moves">0</span>/<span id="maxMoves">8</span></span> |
-                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">25</span>s</span>
+                                    <span>Correct: <span id="correctAnswers">0</span>/<span id="minCorrect">15</span></span> |
+                                    <span>Attempts: <span id="attempts">0</span>/<span id="maxAttempts">20</span></span> |
+                                    <span>Time: <span id="timer">0</span>s/<span id="maxTime">120</span>s</span>
                                 </div>
-                                <div id="memoryGrid" class="memory-grid"></div>
+                                <div id="questionBox" class="question-box d-none"></div>
+                                <input type="number" id="answerInput" class="form-control answer-input d-none mb-3" placeholder="Enter answer">
+                                <button type="button" id="submitAnswer" class="game-btn d-none">Submit</button>
                                 <form method="POST" id="resultForm" style="display: none;">
                                     <input type="hidden" name="game_result" value="1">
                                     <input type="hidden" name="difficulty" id="resultDifficulty">
-                                    <input type="hidden" name="moves" id="resultMoves">
+                                    <input type="hidden" name="correct_answers" id="resultCorrect">
+                                    <input type="hidden" name="attempts" id="resultAttempts">
                                     <input type="hidden" name="time_taken" id="resultTime">
                                     <input type="hidden" name="status" id="resultStatus">
                                 </form>
@@ -388,7 +393,7 @@ if (count($name_parts) >= 1) {
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="gameOverMessage">
-                    You exceeded the maximum moves or time!
+                    You ran out of time or attempts!
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn" data-bs-dismiss="modal">Close</button>
@@ -420,14 +425,14 @@ if (count($name_parts) >= 1) {
             <span>Account</span>
         </a>
         <a href="logout.php" class="mobile-nav-item">
-            <i class="fas fa-sign-out-alt"></i> 
+            <i class="fas fa-sign-out-alt"></i>
             <span>Log out</span>
         </a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Toggle sidebar for desktop and mobile
+        // Sidebar toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -435,7 +440,7 @@ if (count($name_parts) >= 1) {
             mainContent.classList.toggle('main-content-expanded');
         }
 
-        // Responsive navigation handling
+        // Responsive navigation
         function handleResize() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
@@ -450,6 +455,7 @@ if (count($name_parts) >= 1) {
         window.addEventListener('resize', handleResize);
         document.addEventListener('DOMContentLoaded', handleResize);
 
+        // Modal functions
         function showWinModal(amount) {
             const winModal = new bootstrap.Modal(document.getElementById('winModal'));
             document.getElementById('winMessage').innerText = `You won Ksh ${amount}!`;
@@ -462,154 +468,69 @@ if (count($name_parts) >= 1) {
             gameOverModal.show();
         }
 
-        // Memory Match game logic
-        const grid = document.getElementById('memoryGrid');
+        // Math Blitz game logic
         const startButton = document.getElementById('startGame');
-        const movesDisplay = document.getElementById('moves');
-        const timerDisplay = document.getElementById('timer');
-        const maxMovesDisplay = document.getElementById('maxMoves');
-        const maxTimeDisplay = document.getElementById('maxTime');
         const difficultySelect = document.getElementById('difficulty');
+        const questionBox = document.getElementById('questionBox');
+        const answerInput = document.getElementById('answerInput');
+        const submitButton = document.getElementById('submitAnswer');
+        const correctDisplay = document.getElementById('correctAnswers');
+        const attemptsDisplay = document.getElementById('attempts');
+        const timerDisplay = document.getElementById('timer');
+        const minCorrectDisplay = document.getElementById('minCorrect');
+        const maxAttemptsDisplay = document.getElementById('maxAttempts');
+        const maxTimeDisplay = document.getElementById('maxTime');
         const resultForm = document.getElementById('resultForm');
-        let cards = [];
-        let flippedCards = [];
-        let matchedPairs = 0;
-        let moves = 0;
+
+        let questions = [];
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let attempts = 0;
         let timeTaken = 0;
         let timerInterval = null;
-        let maxMoves = 8;
-        let maxTime = 25;
+        let minCorrect = 15;
+        let maxAttempts = 20;
+        let maxTime = 120;
 
-        function createCards(difficulty) {
-            let pairCount, rows, cols, distractor;
-            switch (difficulty) {
-                case 'easy':
-                    pairCount = 4;
-                    rows = 2;
-                    cols = 4;
-                    maxMoves = 8;
-                    maxTime = 25;
-                    distractor = false;
-                    break;
-                case 'medium':
-                    pairCount = 7;
-                    rows = 3;
-                    cols = 5;
-                    maxMoves = 12;
-                    maxTime = 40;
-                    distractor = true;
-                    break;
-                case 'hard':
-                    pairCount = 10;
-                    rows = 4;
-                    cols = 5;
-                    maxMoves = 16;
-                    maxTime = 50;
-                    distractor = false;
-                    break;
-                default:
-                    pairCount = 4;
-                    rows = 2;
-                    cols = 4;
-                    maxMoves = 8;
-                    maxTime = 25;
-                    distractor = false;
-            }
+        function generateQuestions(difficulty) {
+            questions = [];
+            const operations = {
+                easy: ['+', '-'],
+                medium: ['+', '-', '*'],
+                hard: ['+', '-', '*', '/']
+            };
+            const maxNumber = { easy: 10, medium: 50, hard: 100 };
 
-            // Update UI with limits
-            maxMovesDisplay.innerText = maxMoves;
-            maxTimeDisplay.innerText = maxTime;
+            for (let i = 0; i < 20; i++) {
+                const op = operations[difficulty][Math.floor(Math.random() * operations[difficulty].length)];
+                let num1 = Math.floor(Math.random() * maxNumber[difficulty]) + 1;
+                let num2 = Math.floor(Math.random() * maxNumber[difficulty]) + 1;
+                let question, answer;
 
-            // Set grid layout
-            grid.style.gridTemplateColumns = `repeat(${cols}, 80px)`;
-            grid.style.gridTemplateRows = `repeat(${rows}, 80px)`;
-
-            // Generate card values (similar emojis for high difficulty)
-            const emojis = ['😊', '🙂', '😃', '😄', '😺', '🐱', '🌟', '✨', '🍎', '🍏'];
-            let selectedEmojis = emojis.slice(0, pairCount);
-            let cardValues = [...selectedEmojis, ...selectedEmojis];
-            if (distractor) {
-                cardValues.push('❓'); // Distractor card with no match
-            }
-
-            // Shuffle cards
-            for (let i = cardValues.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cardValues[i], cardValues[j]] = [cardValues[j], cardValues[i]];
-            }
-
-            // Create card elements
-            cards = cardValues.map((value, index) => ({
-                id: index,
-                value,
-                element: null,
-                flipped: false,
-                matched: value === '❓' // Distractor can't be matched
-            }));
-
-            // Clear grid
-            grid.innerHTML = '';
-
-            // Create card elements
-            cards.forEach(card => {
-                const cardElement = document.createElement('div');
-                cardElement.classList.add('memory-card');
-                cardElement.dataset.id = card.id;
-                cardElement.innerText = '';
-                if (card.matched) {
-                    cardElement.style.background = '#ccc';
-                    cardElement.style.cursor = 'default';
+                if (op === '/' && difficulty === 'hard') {
+                    // Ensure clean division
+                    const product = num1 * num2;
+                    question = `${product} ÷ ${num1} = ?`;
+                    answer = num2;
                 } else {
-                    cardElement.addEventListener('click', () => flipCard(card));
+                    question = `${num1} ${op} ${num2} = ?`;
+                    answer = eval(`${num1} ${op} ${num2}`);
+                    if (op === '/') {
+                        answer = Math.round(answer * 100) / 100; // Round division to 2 decimals
+                    }
                 }
-                grid.appendChild(cardElement);
-                card.element = cardElement;
-            });
-        }
 
-        function flipCard(card) {
-            if (flippedCards.length < 2 && !card.flipped && !card.matched && moves < maxMoves && timeTaken < maxTime) {
-                card.flipped = true;
-                card.element.classList.add('flipped');
-                card.element.innerText = card.value;
-                flippedCards.push(card);
-
-                if (flippedCards.length === 2) {
-                    moves++;
-                    movesDisplay.innerText = moves;
-                    checkMatch();
-                }
+                questions.push({ question, answer });
             }
         }
 
-        function checkMatch() {
-            const [card1, card2] = flippedCards;
-            if (card1.value === card2.value) {
-                card1.matched = true;
-                card2.matched = true;
-                card1.element.classList.add('matched');
-                card2.element.classList.add('matched');
-                matchedPairs++;
-                flippedCards = [];
-
-                if (matchedPairs === Math.floor(cards.length / 2)) {
-                    endGame('win');
-                } else if (moves >= maxMoves) {
-                    endGame('Maximum moves exceeded');
-                }
+        function showQuestion() {
+            if (currentQuestion < 20) {
+                questionBox.innerText = questions[currentQuestion].question;
+                answerInput.value = '';
+                answerInput.focus();
             } else {
-                setTimeout(() => {
-                    card1.flipped = false;
-                    card2.flipped = false;
-                    card1.element.classList.remove('flipped');
-                    card2.element.classList.remove('flipped');
-                    card1.element.innerText = '';
-                    card2.element.innerText = '';
-                    flippedCards = [];
-                    if (moves >= maxMoves) {
-                        endGame('Maximum moves exceeded');
-                    }
-                }, 1000);
+                checkGameEnd();
             }
         }
 
@@ -629,33 +550,95 @@ if (count($name_parts) >= 1) {
             clearInterval(timerInterval);
         }
 
+        function checkGameEnd() {
+            if (correctAnswers >= minCorrect) {
+                endGame('win');
+            } else if (attempts >= maxAttempts || currentQuestion >= 20) {
+                endGame('Insufficient correct answers or maximum attempts exceeded');
+            }
+        }
+
         function endGame(status) {
             stopTimer();
+            questionBox.classList.add('d-none');
+            answerInput.classList.add('d-none');
+            submitButton.classList.add('d-none');
             document.getElementById('resultDifficulty').value = difficultySelect.value;
-            document.getElementById('resultMoves').value = moves;
+            document.getElementById('resultCorrect').value = correctAnswers;
+            document.getElementById('resultAttempts').value = attempts;
             document.getElementById('resultTime').value = timeTaken;
             document.getElementById('resultStatus').value = status;
             resultForm.submit();
         }
 
         function resetGame() {
-            cards = [];
-            flippedCards = [];
-            matchedPairs = 0;
-            moves = 0;
+            questions = [];
+            currentQuestion = 0;
+            correctAnswers = 0;
+            attempts = 0;
             timeTaken = 0;
-            movesDisplay.innerText = moves;
+            correctDisplay.innerText = correctAnswers;
+            attemptsDisplay.innerText = attempts;
             timerDisplay.innerText = timeTaken;
+            questionBox.classList.add('d-none');
+            answerInput.classList.add('d-none');
+            submitButton.classList.add('d-none');
             stopTimer();
-            grid.innerHTML = '';
         }
 
         startButton.addEventListener('click', () => {
             resetGame();
-            createCards(difficultySelect.value);
+            switch (difficultySelect.value) {
+                case 'easy':
+                    minCorrect = 15;
+                    maxAttempts = 20;
+                    maxTime = 120;
+                    break;
+                case 'medium':
+                    minCorrect = 18;
+                    maxAttempts = 15;
+                    maxTime = 90;
+                    break;
+                case 'hard':
+                    minCorrect = 19;
+                    maxAttempts = 12;
+                    maxTime = 60;
+                    break;
+            }
+            minCorrectDisplay.innerText = minCorrect;
+            maxAttemptsDisplay.innerText = maxAttempts;
+            maxTimeDisplay.innerText = maxTime;
+            generateQuestions(difficultySelect.value);
+            questionBox.classList.remove('d-none');
+            answerInput.classList.remove('d-none');
+            submitButton.classList.remove('d-none');
             startTimer();
+            showQuestion();
             startButton.disabled = true;
             difficultySelect.disabled = true;
+        });
+
+        submitButton.addEventListener('click', () => {
+            if (attempts < maxAttempts && timeTaken < maxTime) {
+                const userAnswer = parseFloat(answerInput.value);
+                const correctAnswer = questions[currentQuestion].answer;
+                attempts++;
+                attemptsDisplay.innerText = attempts;
+
+                if (Math.abs(userAnswer - correctAnswer) < 0.01) {
+                    correctAnswers++;
+                    correctDisplay.innerText = correctAnswers;
+                }
+
+                currentQuestion++;
+                showQuestion();
+            }
+        });
+
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitButton.click();
+            }
         });
 
         difficultySelect.addEventListener('change', () => {
