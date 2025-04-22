@@ -235,7 +235,7 @@ $achievements = [
                                 <h5 class="card-title">Memory Match</h5>
                                 <p class="card-text">Flip cards to find matching pairs and boost your memory skills.</p>
                                 <p class="card-text"><small class="text-muted">3 Levels • 10 Mins • 100 Points</small></p>
-                                <a href="#" class="btn btn-primary w-100">Play Now</a>
+                                <a href="memory-game.php" class="btn btn-primary w-100">Play Now</a>
                             </div>
                         </div>
                     </div>
