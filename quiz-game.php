@@ -83,6 +83,9 @@ $earnings = $earningStmt->fetch()['today_earnings'] ?? 0;
             </div>
         </section>
     </div>
+    <div>
+        <a href="games.php" class="btn btn-primary" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">More Games</a>
+    </div>
 
     <div class="mobile-bottom-nav">
         <a href="index1.php" class="mobile-nav-item"><i class="fas fa-home"></i><span>Home</span></a>

@@ -53,6 +53,7 @@ try {
     $stmt = $conn->prepare('SELECT SUM(points_earned) as total_points FROM user_game_history WHERE user_id = ? AND game_type = "spin"');
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
+    $result = $stmt->get_result();
     $total_spin_points = $result->fetch_assoc()['total_points'] ?? 0;
     $stmt->close();
 } catch (Exception $e) {
@@ -185,7 +186,7 @@ $game_progress = [
     ]
 ];
 
-// Mock achievements (unchanged)
+// Mock achievements
 $achievements = [
     ['title' => 'First Win', 'description' => 'Won your first game', 'icon' => 'fa-medal', 'date' => '2025-04-10'],
     ['title' => 'Quick Learner', 'description' => 'Completed 5 games', 'icon' => 'fa-star', 'date' => '2025-04-12'],
@@ -208,16 +209,56 @@ $achievements = [
         .games-section, .game-progress, .achievements {
             padding: 2rem 0;
         }
-        .card {
+        .game-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+        .game-card {
+            flex: 1 1 calc(50% - 0.75rem);
+            max-width: calc(50% - 0.75rem);
+            height: 350px; /* Fixed height for uniformity */
+            display: flex;
+            flex-direction: column;
             border-radius: 10px;
+            overflow: hidden;
             transition: transform 0.2s;
         }
-        .card:hover {
+        .game-card:hover {
             transform: translateY(-5px);
         }
-        .card-img-top {
+        .game-card .card-img-top {
             height: 150px;
+            width: 100%;
             object-fit: cover;
+            object-position: center;
+        }
+        .game-card .card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1rem;
+        }
+        .game-card .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .game-card .card-text {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            flex-grow: 1;
+        }
+        .game-card .text-muted {
+            font-size: 0.8rem;
+        }
+        .game-card .btn-primary {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            transition: background-color 0.3s ease;
+        }
+        .game-card .btn-primary:hover {
+            background-color: #0056b3;
         }
         .progress {
             height: 20px;
@@ -225,14 +266,11 @@ $achievements = [
         .achievement-card i {
             color: #007bff;
         }
-        .btn-primary {
-            transition: background-color 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .game-details {
-            font-size: 0.9rem;
+        @media (max-width: 768px) {
+            .game-card {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -288,111 +326,45 @@ $achievements = [
                     <?php echo $error; ?>
                 <?php endif; ?>
                 <h2 class="mb-4">Featured Games</h2>
-                <div class="row g-4">
+                <div class="game-grid">
                     <!-- Memory Match -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="memory-game.jpg" class="card-img-top" alt="Memory Match">
-                            <div class="card-body">
-                                <h5 class="card-title">Memory Match</h5>
-                                <p class="card-text">Flip cards to find matching pairs in three difficulty levels.</p>
-                                <div class="game-details">
-                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($memory_games_played); ?></p>
-                                    <?php if (!empty($memory_rewards)): ?>
-                                        <p><strong>Recent Rewards:</strong></p>
-                                        <ul>
-                                            <?php foreach ($memory_rewards as $reward): ?>
-                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_memory_points); ?></p>
-                                </div>
-                                <p class="card-text"><small class="text-muted">3 Levels • 5-10 Mins • Up to 80 Ksh</small></p>
-                                <a href="memory-game.php" class="btn btn-primary w-100">Play Now</a>
-                            </div>
+                    <div class="card game-card">
+                        <img src="memory-game.jpg" class="card-img-top" alt="Memory Match">
+                        <div class="card-body">
+                            <h5 class="card-title">Memory Match</h5>
+                            <p class="card-text">Flip cards to find matching pairs.</p>
+                            <p class="card-text"><small class="text-muted">5-10 Mins • Up to 80 Ksh</small></p>
+                            <a href="memory-game.php" class="btn btn-primary w-100">Play Now</a>
                         </div>
                     </div>
                     <!-- Math Blitz -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="math-blitz-game.jpg" class="card-img-top" alt="Math Blitz">
-                            <div class="card-body">
-                                <h5 class="card-title">Math Blitz</h5>
-                                <p class="card-text">Solve 20 math problems under time pressure to earn rewards.</p>
-                                <div class="game-details">
-                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($math_games_played); ?></p>
-                                    <?php if (!empty($math_rewards)): ?>
-                                        <p><strong>Recent Rewards:</strong></p>
-                                        <ul>
-                                            <?php foreach ($math_rewards as $reward): ?>
-                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_math_points); ?></p>
-                                </div>
-                                <p class="card-text"><small class="text-muted">20 Questions • 2-5 Mins • Up to 80 Ksh</small></p>
-                                <a href="math-blitz.php" class="btn btn-primary w-100">Play Now</a>
-                            </div>
+                    <div class="card game-card">
+                        <img src="math-blitz-game.jpg" class="card-img-top" alt="Math Blitz">
+                        <div class="card-body">
+                            <h5 class="card-title">Math Blitz</h5>
+                            <p class="card-text">Solve 20 math problems fast.</p>
+                            <p class="card-text"><small class="text-muted">2-5 Mins • Up to 80 Ksh</small></p>
+                            <a href="math-blitz.php" class="btn btn-primary w-100">Play Now</a>
                         </div>
                     </div>
                     <!-- Word Scramble -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="word-scramble-game.png" class="card-img-top" alt="Word Scramble">
-                            <div class="card-body">
-                                <h5 class="card-title">Word Scramble</h5>
-                                <p class="card-text">Unscramble letters to form words and earn rewards.</p>
-                                <div class="game-details">
-                                    <p><strong>Games Played:</strong> <?php echo htmlspecialchars($scramble_games_played); ?></p>
-                                    <?php if (!empty($scramble_rewards)): ?>
-                                        <p><strong>Recent Rewards:</strong></p>
-                                        <ul>
-                                            <?php foreach ($scramble_rewards as $reward): ?>
-                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_scramble_points); ?></p>
-                                </div>
-                                <p class="card-text"><small class="text-muted">3 Variations • 5-10 Mins • Up to 150 Ksh</small></p>
-                                <a href="word-scramble-game.php" class="btn btn-primary w-100">Play Now</a>
-                            </div>
+                    <div class="card game-card">
+                        <img src="word-scramble-game.png" class="card-img-top" alt="Word Scramble">
+                        <div class="card-body">
+                            <h5 class="card-title">Word Scramble</h5>
+                            <p class="card-text">Unscramble letters to form words.</p>
+                            <p class="card-text"><small class="text-muted">5-10 Mins • Up to 150 Ksh</small></p>
+                            <a href="word-scramble-game.php" class="btn btn-primary w-100">Play Now</a>
                         </div>
                     </div>
                     <!-- Spin & Earn -->
-                    <div class="col-md-4">
-                        <div class="card">
-                            <img src="spin-game.webp" class="card-img-top" alt="Spin & Earn">
-                            <div class="card-body">
-                                <h5 class="card-title">Spin & Earn</h5>
-                                <p class="card-text">Spin the wheel for a chance at big rewards!</p>
-                                <div class="game-details">
-                                    <?php if (!$spin_summary['registration']): ?>
-                                        <p><strong>Registration Spin:</strong> Available! Win up to Ksh 250.</p>
-                                    <?php else: ?>
-                                        <p><strong>Registration Spin:</strong> Already used.</p>
-                                    <?php endif; ?>
-                                    <?php if (!$spin_summary['weekly']): ?>
-                                        <p><strong>Weekly Spin:</strong> Available! Win up to Ksh 500.</p>
-                                    <?php else: ?>
-                                        <p><strong>Weekly Spin:</strong> Used this week.</p>
-                                    <?php endif; ?>
-                                    <p><strong>Bet Spin:</strong> Stake Ksh 100-1,000 for up to 600% profit.</p>
-                                    <?php if (!empty($spin_rewards)): ?>
-                                        <p><strong>Recent Rewards:</strong></p>
-                                        <ul>
-                                            <?php foreach ($spin_rewards as $reward): ?>
-                                                <li>Ksh <?php echo htmlspecialchars($reward['reward']); ?> on <?php echo date('M d, Y', strtotime($reward['created_at'])); ?></li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                    <p><strong>Total Points:</strong> <?php echo htmlspecialchars($total_spin_points); ?></p>
-                                </div>
-                                <p class="card-text"><small class="text-muted">Luck-Based • Varies • Up to 600% Profit</small></p>
-                                <a href="spin-game.php" class="btn btn-primary w-100">Play Now</a>
-                            </div>
+                    <div class="card game-card">
+                        <img src="spin-game.webp" class="card-img-top" alt="Spin & Earn">
+                        <div class="card-body">
+                            <h5 class="card-title">Spin & Earn</h5>
+                            <p class="card-text">Spin the wheel for rewards.</p>
+                            <p class="card-text"><small class="text-muted">Varies • Up to 600% Profit</small></p>
+                            <a href="spin-game.php" class="btn btn-primary w-100">Play Now</a>
                         </div>
                     </div>
                 </div>
