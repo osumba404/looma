@@ -344,7 +344,7 @@ $achievements = [
                             <h5 class="card-title">Math Blitz</h5>
                             <p class="card-text">Solve 20 math problems fast.</p>
                             <p class="card-text"><small class="text-muted">2-5 Mins • Up to 80 Ksh</small></p>
-                            <a href="math-blitz.php" class="btn btn-primary w-100">Play Now</a>
+                            <a href="math-blitz-game.php" class="btn btn-primary w-100">Play Now</a>
                         </div>
                     </div>
                     <!-- Word Scramble -->
