@@ -1,55 +1,38 @@
 <?php
-require_once '../includes/db.php';
+require_once 'includes/db.php';
 
 header('Content-Type: application/json');
 
-// Log callback for debugging (optional)
-$callback_data = file_get_contents('php://input');
-file_put_contents('mpesa_callback_log.txt', date('Y-m-d H:i:s') . ': ' . $callback_data . "\n", FILE_APPEND);
-
-$data = json_decode($callback_data, true);
-
-// Check if callback contains STK Push result
-if (!isset($data['Body']['stkCallback']['ResultCode'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid callback data']);
-    exit;
-}
-
-$checkout_request_id = $data['Body']['stkCallback']['CheckoutRequestID'];
-$result_code = $data['Body']['stkCallback']['ResultCode'];
-$result_desc = $data['Body']['stkCallback']['ResultDesc'];
-
 try {
-    // Find transaction
-    $stmt = $pdo->prepare('SELECT transaction_id, user_id FROM transactions WHERE mpesa_code = ?');
-    $stmt->execute([$checkout_request_id]);
-    $transaction = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$transaction) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Transaction not found']);
-        exit;
+    // Read callback data
+    $callback_data = json_decode(file_get_contents('php://input'), true);
+    if (!$callback_data) {
+        throw new Exception('Invalid callback data');
     }
 
-    if ($result_code == 0) {
-        // Payment successful
-        $stmt = $pdo->prepare('UPDATE transactions SET status = "completed" WHERE transaction_id = ?');
-        $stmt->execute([$transaction['transaction_id']]);
+    // Log callback for debugging (optional)
+    file_put_contents('mpesa_callback.log', json_encode($callback_data, JSON_PRETTY_PRINT) . PHP_EOL, FILE_APPEND);
 
-        // Activate user account
-        $stmt = $pdo->prepare('UPDATE users SET is_activated = TRUE WHERE user_id = ?');
-        $stmt->execute([$transaction['user_id']]);
+    // Check if callback is for B2C or C2B
+    $result_code = $callback_data['Result']['ResultCode'] ?? null;
+    $transaction_id = $callback_data['Result']['TransactionID'] ?? $callback_data['Result']['ConversationID'] ?? null;
 
-        echo json_encode(['message' => 'Payment processed, account activated']);
-    } else {
-        // Payment failed
-        $stmt = $pdo->prepare('UPDATE transactions SET status = "failed" WHERE transaction_id = ?');
-        $stmt->execute([$transaction['transaction_id']]);
-        echo json_encode(['message' => 'Payment failed', 'details' => $result_desc]);
-    }
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    if (!$result.validated_request = $stmt->execute();
+    $stmt->close();
+
+    // Prepare response for Safaricom
+    $response = [
+        'ResultCode' => 0,
+        'ResultDesc' => 'Accepted'
+    ];
+    echo json_encode($response);
+} catch (Exception $e) {
+    // Log error
+    file_put_contents('mpesa_callback_error.log', $e->getMessage() . PHP_EOL, FILE_APPEND);
+    // Respond to Safaricom to acknowledge receipt
+    echo json_encode([
+        'ResultCode' => 1,
+        'ResultDesc' => 'Error processing callback'
+    ]);
 }
 ?>
