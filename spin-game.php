@@ -39,7 +39,7 @@ if (!$user) {
 
 // Define reward sets for each spin type
 $reward_sets = [
-    'registration' => [0, 50, 100, 150, 200, 250], // Ksh rewards
+    'registration' => [0, 50, 100, 150, 200, 250,], // Ksh rewards
     'weekly' => [0, 100, 200, 300, 400, 500],
     'bet' => [] // Will be calculated dynamically based on stake
 ];
@@ -217,14 +217,15 @@ if (count($name_parts) >= 1) {
         .wheel-pointer {
             position: absolute;
             top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 45%;
+            transform: rotate(180deg); 
             width: 0;
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
             border-bottom: 30px solid var(--secondary-color);
             z-index: 10;
+            
         }
         .spin-btn {
             background-color: var(--primary-color);
@@ -365,7 +366,7 @@ if (count($name_parts) >= 1) {
                                             <option value="bet">Bet Spin (Stake Ksh 100-1,000)</option>
                                         </select>
                                     </div>
-                                    <div class="mb-3 bet-input-container" style="display: none;">
+                                    <div class="mb-3 bet-input-container">
                                         <label class="form-label">Stake Amount (Ksh):</label>
                                         <input type="number" name="stake" id="stakeInput" class="bet-input" min="100" max="1000" placeholder="Enter Ksh 100-1000">
                                     </div>
