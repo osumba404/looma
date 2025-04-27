@@ -9,11 +9,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
     <style>
+           /* Dark mode overrides */
+           [data-bs-theme="dark"] {
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+
+        [data-bs-theme="dark"] .sidebar {
+            background-color: #2d2d2d;
+            color: #fff;
+        }
+
+        [data-bs-theme="dark"] .card {
+            background-color: #2d2d2d;
+            border-color: #444;
+        }
+
+        [data-bs-theme="dark"] .form-control {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
+        }
+
+        [data-bs-theme="dark"] .nav-link {
+            color: #fff;
+        }
+
+        [data-bs-theme="dark"] .nav-link.active {
+            background-color: #444;
+        }
 
     </style>
 </head>
-<body>
-<body>
+
+<body data-bs-theme="<?php echo isset($user['theme']) ? $user['theme'] : 'light'; ?>">
 <?php
 session_start();
 require_once 'includes/db.php';
@@ -85,6 +114,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         }
     }
 }
+
+// Fetch user data
+$stmt = $conn->prepare('SELECT full_name, username, theme FROM users WHERE user_id = ?');
 ?>
 
     <!-- Desktop Sidebar -->
@@ -140,11 +172,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         <!-- Settings Content -->
         <div class="container">
          
-            <ul class="nav nav-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#account">Account</a>
-                </li>
-            </ul>
+             <!-- Tabs Navigation -->
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#account">Account</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#appearance">Appearance</a>
+                    </li>
+                </ul>
 
             <div class="tab-content mt-3">
                 <!-- Account Tab -->
@@ -178,7 +214,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                         </div>
                     </div>
                 </div>
-            </div>
+                        <!-- Appearance Tab -->
+                <div class="tab-pane fade" id="appearance">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title">Theme Settings</h4>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="themeToggle" 
+                                    <?php echo (isset($user['theme']) && $user['theme'] === 'dark') ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="themeToggle">Dark Mode</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
         </div>
     </div>
 
@@ -269,6 +317,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 
             showSpinner(button, true);
             setTimeout(() => showSpinner(button, false), 1000);
+        });
+
+
+
+
+             // Theme Toggle Handler
+        document.getElementById('themeToggle').addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.body.setAttribute('data-bs-theme', theme);
+            
+            fetch('update_theme.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'theme=' + encodeURIComponent(theme)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update theme');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.checked = !this.checked;S
+                document.body.setAttribute('data-bs-theme', this.checked ? 'dark' : 'light');
+            });
         });
     </script>
 </body>

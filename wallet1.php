@@ -652,11 +652,11 @@ if ($user) {
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="games.php" class="mobile-nav-item">
+        <a href="games.php" class="mobile-nav-item active">
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item active">
+        <a href="wallet1.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
