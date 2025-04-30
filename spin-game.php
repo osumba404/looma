@@ -432,6 +432,7 @@ if (count($name_parts) >= 1) {
         </a>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle sidebar for desktop and mobile
         function toggleSidebar() {
@@ -546,21 +547,26 @@ if (count($name_parts) >= 1) {
             .then(response => response.text())
             .then(data => {
                 // Extract spinResult from response
+                let spinResult = { amount: 0, rewards: currentRewards };
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data, 'text/html');
                 const script = doc.querySelector('script:not([src])');
-                let spinResult = { amount: 0, rewards: currentRewards };
                 if (script) {
-                    eval(script.textContent); // Safely parse spinResult
+                    const scriptContent = script.textContent;
+                    const match = scriptContent.match(/const spinResult = ({.*});/);
+                    if (match) {
+                        spinResult = JSON.parse(match[1]);
+                    }
                 }
 
-                // Calculate rotation to land on the winning reward (pointer at top, 0°)
+                console.log('spinResult:', spinResult); // Debug output
+
+                // Calculate rotation to land on the winning reward's center
                 const numSegments = spinResult.rewards.length;
-                const angle = 360 / numSegments;
+                const anglePerSegment = 360 / numSegments;
                 const winIndex = spinResult.rewards.indexOf(spinResult.amount);
-                // Adjust so the winning segment's center is at 0° (top)
-                const targetAngle = - (winIndex * angle + angle / 2);
-                const totalRotation = 360 * 5 + targetAngle; // 5 full spins + target
+                const targetAngle = -((winIndex * anglePerSegment) + (anglePerSegment / 2));
+                const totalRotation = 360 * 5 - targetAngle; // 5 full spins + align center
 
                 canvas.style.transition = 'transform 4s ease-out';
                 canvas.style.transform = `rotate(${totalRotation}deg)`;
