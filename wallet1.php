@@ -98,99 +98,124 @@ try {
     $referral_count = $stmt->get_result()->fetch_assoc()['referral_count'];
     $stmt->close();
 
-    // Handle deposit form submission
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deposit'])) {
+    // Handle AJAX deposit/withdrawal requests
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+        header('Content-Type: application/json');
+        $response = ['success' => false, 'message' => ''];
+
         if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            throw new Exception('Invalid CSRF token');
+            $response['message'] = 'Invalid CSRF token';
+            echo json_encode($response);
+            exit();
         }
 
         $amount = floatval($_POST['amount']);
         $phone = trim($_POST['phone']);
 
-        // Validation
-        if ($amount < 1) {
-            throw new Exception('Minimum deposit amount is Ksh 1');
-        }
-        if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-            throw new Exception('Invalid phone number. Use format: +2547XXXXXXXX');
-        }
-
-        // Initiate C2B STK Push
-        $access_token = getAccessToken();
-        $stk_response = initiateSTKPush($access_token, $amount, $phone, 'Deposit to Looma');
-
-        if ($stk_response['ResponseCode'] === '0') {
-            // Insert transaction as pending
-            $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
-            if ($stmt === false) {
-                throw new Exception('Prepare failed: ' . $conn->error);
+        if (isset($_POST['deposit'])) {
+            // Validation
+            if ($amount < 1) {
+                $response['message'] = 'Minimum deposit amount is Ksh 1';
+                echo json_encode($response);
+                exit();
             }
-            $type = 'deposit';
-            $transaction_id = $stk_response['CheckoutRequestID'];
-            $status = 'pending';
-            $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
-            $stmt->execute();
-            $stmt->close();
+            if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
+                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX';
+                echo json_encode($response);
+                exit();
+            }
 
-            $success = '<script>showSuccessModal("Deposit request of Ksh ' . number_format($amount, 2) . ' initiated. Please check your phone to complete the payment.");</script>';
+            // Initiate C2B STK Push
+            $access_token = getAccessToken();
+            $stk_response = initiateSTKPush($access_token, $amount, $phone, 'Deposit to Looma');
+
+            if ($stk_response['ResponseCode'] === '0') {
+                // Insert transaction as pending
+                $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
+                if ($stmt === false) {
+                    $response['message'] = 'Database error';
+                    echo json_encode($response);
+                    exit();
+                }
+                $type = 'deposit';
+                $transaction_id = $stk_response['CheckoutRequestID'];
+                $status = 'pending';
+                $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
+                $stmt->execute();
+                $stmt->close();
+
+                $response['success'] = true;
+                $response['message'] = 'Deposit request of Ksh ' . number_format($amount, 2) . ' initiated. Please check your phone to complete the payment.';
+            } else {
+                $response['message'] = 'Failed to initiate deposit: ' . ($stk_response['errorMessage'] ?? 'Unknown error');
+            }
+        } elseif (isset($_POST['withdraw'])) {
+            // Validation
+            if ($amount < 50) {
+                $response['message'] = 'Minimum withdrawal amount is Ksh 50';
+                echo json_encode($response);
+                exit();
+            }
+            if ($amount > $balance) {
+                $response['message'] = 'Insufficient balance';
+                echo json_encode($response);
+                exit();
+            }
+            if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
+                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX';
+                echo json_encode($response);
+                exit();
+            }
+
+            // Initiate B2C transaction
+            $access_token = getAccessToken();
+            $b2c_response = initiateB2C($access_token, $amount, $phone, 'Withdrawal from Looma');
+
+            if ($b2c_response['ResponseCode'] === '0') {
+                // Insert transaction as pending
+                $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
+                if ($stmt === false) {
+                    $response['message'] = 'Database error';
+                    echo json_encode($response);
+                    exit();
+                }
+                $type = 'withdrawal';
+                $transaction_id = $b2c_response['ConversationID'];
+                $status = 'pending';
+                $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
+                $stmt->execute();
+                $stmt->close();
+
+                // Deduct amount from wallet
+                $stmt = $conn->prepare('UPDATE wallet SET balance = balance - ?, last_interact = NOW() WHERE user_id = ?');
+                if ($stmt === false) {
+                    $response['message'] = 'Database error';
+                    echo json_encode($response);
+                    exit();
+                }
+                $stmt->bind_param('di', $amount, $user_id);
+                $stmt->execute();
+                $stmt->close();
+
+                $response['success'] = true;
+                $response['message'] = 'Withdrawal request of Ksh ' . number_format($amount, 2) . ' initiated. You will receive a confirmation soon.';
+            } else {
+                $response['message'] = 'Failed to initiate withdrawal: ' . ($b2c_response['errorMessage'] ?? 'Unknown error');
+            }
         } else {
-            throw new Exception('Failed to initiate deposit: ' . ($stk_response['errorMessage'] ?? 'Unknown error'));
-        }
-    }
-
-    // Handle withdrawal form submission
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['withdraw'])) {
-        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            throw new Exception('Invalid CSRF token');
+            $response['message'] = 'Invalid request';
         }
 
-        $amount = floatval($_POST['amount']);
-        $phone = trim($_POST['phone']);
-
-        // Validation
-        if ($amount < 50) {
-            throw new Exception('Minimum withdrawal amount is Ksh 50');
-        }
-        if ($amount > $balance) {
-            throw new Exception('Insufficient balance');
-        }
-        if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-            throw new Exception('Invalid phone number. Use format: +2547XXXXXXXX');
-        }
-
-        // Initiate B2C transaction
-        $access_token = getAccessToken();
-        $b2c_response = initiateB2C($access_token, $amount, $phone, 'Withdrawal from Looma');
-
-        if ($b2c_response['ResponseCode'] === '0') {
-            // Insert transaction as pending
-            $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
-            if ($stmt === false) {
-                throw new Exception('Prepare failed: ' . $conn->error);
-            }
-            $type = 'withdrawal';
-            $transaction_id = $b2c_response['ConversationID'];
-            $status = 'pending';
-            $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
-            $stmt->execute();
-            $stmt->close();
-
-            // Deduct amount from wallet
-            $stmt = $conn->prepare('UPDATE wallet SET balance = balance - ?, last_interact = NOW() WHERE user_id = ?');
-            if ($stmt === false) {
-                throw new Exception('Prepare failed: ' . $conn->error);
-            }
-            $stmt->bind_param('di', $amount, $user_id);
-            $stmt->execute();
-            $stmt->close();
-
-            $success = '<script>showSuccessModal("Withdrawal request of Ksh ' . number_format($amount, 2) . ' initiated. You will receive a confirmation soon.");</script>';
-        } else {
-            throw new Exception('Failed to initiate withdrawal: ' . ($b2c_response['errorMessage'] ?? 'Unknown error'));
-        }
+        echo json_encode($response);
+        exit();
     }
 } catch (Exception $e) {
     error_log('Error in wallet1.php: ' . $e->getMessage());
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => htmlspecialchars($e->getMessage())]);
+        exit();
+    }
     $error = '<script>showErrorModal("' . htmlspecialchars($e->getMessage()) . '");</script>';
 }
 
@@ -516,19 +541,20 @@ if ($user) {
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form method="POST" id="depositForm" class="deposit-form">
+                            <form id="depositForm" class="deposit-form">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                <input type="hidden" name="deposit" value="1">
                                 <div class="mb-3">
                                     <label for="deposit_amount" class="form-label">Amount (Ksh)</label>
-                                    <input type="number" class="form-control" id="deposit_amount" name="amount" min="1" step="0.01" required>
-                                    <small class="form-text text-muted">Minimum deposit: Ksh 1</small>
+                                    <input type="number" class="form-control" id="deposit_amount" name="amount" min="100" step="0.01" required>
+                                    <small class="form-text text-muted">Minimum deposit: Ksh 100</small>
                                 </div>
                                 <div class="mb-3">
                                     <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
-                                    <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" required>
+                                    <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
                                     <small class="form-text text-muted">Format: +2547XXXXXXXX</small>
                                 </div>
-                                <button type="submit" name="deposit" class="btn btn-primary w-100">Submit Deposit</button>
+                                <button type="submit" class="btn btn-primary w-100">Submit Deposit</button>
                             </form>
                         </div>
                     </div>
@@ -544,19 +570,20 @@ if ($user) {
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form method="POST" id="withdrawForm" class="withdrawal-form">
+                            <form id="withdrawForm" class="withdrawal-form">
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                <input type="hidden" name="withdraw" value="1">
                                 <div class="mb-3">
                                     <label for="amount" class="form-label">Amount (Ksh)</label>
-                                    <input type="number" class="form-control" id="amount" name="amount" min="50" step="0.01" required>
-                                    <small class="form-text text-muted">Minimum withdrawal: Ksh 50</small>
+                                    <input type="number" class="form-control" id="amount" name="amount" min="200" step="0.01" required>
+                                    <small class="form-text text-muted">Minimum withdrawal: Ksh 200</small>
                                 </div>
                                 <div class="mb-3">
                                     <label for="phone" class="form-label">M-Pesa Phone Number</label>
-                                    <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" required>
+                                    <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
                                     <small class="form-text text-muted">Format: +2547XXXXXXXX</small>
                                 </div>
-                                <button type="submit" name="withdraw" class="btn btn-primary w-100">Submit Withdrawal</button>
+                                <button type="submit" class="btn btn-primary w-100">Submit Withdrawal</button>
                             </form>
                         </div>
                     </div>
@@ -652,11 +679,11 @@ if ($user) {
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="games.php" class="mobile-nav-item active">
+        <a href="games.php" class="mobile-nav-item">
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item">
+        <a href="wallet1.php" class="mobile-nav-item active">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
@@ -674,54 +701,139 @@ if ($user) {
         </a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Toggle sidebar
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            sidebar.classList.toggle('active');
-            mainContent.classList.toggle('main-content-expanded');
-        }
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js?v=1.0"></script>
+<script>
+// Toggle sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    sidebar.classList.toggle('active');
+    mainContent.classList.toggle('main-content-expanded');
+}
 
-        // Responsive navigation
-        function handleResize() {
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove('active');
-                mainContent.classList.remove('main-content-expanded');
-            } else {
-                sidebar.classList.add('active');
-                mainContent.classList.remove('main-content-expanded');
-            }
-        }
-        window.addEventListener('resize', handleResize);
-        document.addEventListener('DOMContentLoaded', handleResize);
+// Responsive navigation
+function handleResize() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    if (window.innerWidth < 992) {
+        sidebar.classList.remove('active');
+        mainContent.classList.remove('main-content-expanded');
+    } else {
+        sidebar.classList.add('active');
+        mainContent.classList.remove('main-content-expanded');
+    }
+}
+window.addEventListener('resize', handleResize);
+document.addEventListener('DOMContentLoaded', handleResize);
 
-        // Animation observer
-        const animateElements = document.querySelectorAll('.animate-fadeIn');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate');
+// Animation observer
+const animateElements = document.querySelectorAll('.animate-fadeIn');
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+        }
+    });
+}, { threshold: 0.1 });
+animateElements.forEach(element => observer.observe(element));
+
+// Modal functions
+function showSuccessModal(message) {
+    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+    document.getElementById('successMessage').innerText = message;
+    modal.show();
+}
+
+function showErrorModal(message) {
+    const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+    document.getElementById('errorMessage').innerText = message;
+    modal.show();
+}
+
+// Handle form submissions via AJAX
+function handleFormSubmission(formId, modalId) {
+    const form = document.getElementById(formId);
+    const modal = document.getElementById(modalId);
+    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch('wallet1.php', {
+                method: 'POST', // Fixed: Changed 'methods' to 'method'
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
-        }, { threshold: 0.1 });
-        animateElements.forEach(element => observer.observe(element));
 
-        // Modal functions
-        function showSuccessModal(message) {
-            const modal = new bootstrap.Modal(document.getElementById('successModal'));
-            document.getElementById('successMessage').innerText = message;
-            modal.show();
-        }
+            const result = await response.json();
+            bootstrapModal.hide();
 
-        function showErrorModal(message) {
-            const modal = new bootstrap.Modal(document.getElementById('errorModal'));
-            document.getElementById('errorMessage').innerText = message;
-            modal.show();
+            if (result.success) {
+                showSuccessModal(result.message);
+                setTimeout(() => window.location.reload(), 2000); // Refresh to update balance
+            } else {
+                showErrorModal(result.message);
+            }
+        } catch (error) {
+            bootstrapModal.hide();
+            showErrorModal('An error occurred while processing your request.');
+        } finally {
+            submitButton.disabled = false;
         }
-    </script>
+    });
+}
+
+// Initialize form handlers
+handleFormSubmission('depositForm', 'depositModal');
+handleFormSubmission('withdrawForm', 'withdrawModal');
+
+// Ensure modals are properly closed
+['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(modalId => {
+    const modalEl = document.getElementById(modalId);
+    modalEl.addEventListener('hidden.bs.modal', () => {
+        document.body.classList.remove('modal-open');
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        modalEl.style.display = 'none';
+    });
+});
+
+// Manage focusable elements in modals
+function manageModalFocus(modalId) {
+    const modal = document.getElementById(modalId);
+    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+
+    modal.addEventListener('shown.bs.modal', () => {
+        focusableElements.forEach(el => {
+            el.removeAttribute('tabindex');
+        });
+        // Trap focus within the modal
+        const firstFocusable = focusableElements[0];
+        if (firstFocusable) {
+            firstFocusable.focus();
+        }
+    });
+
+    modal.addEventListener('hidden.bs.modal', () => {
+        focusableElements.forEach(el => {
+            el.setAttribute('tabindex', '-1');
+        });
+        // Return focus to the element that triggered the modal
+        const trigger = document.querySelector(`[data-bs-target="#${modalId}"]`) || document.querySelector(`[data-bs-toggle="modal"][data-bs-target="#${modalId}"]`);
+        if (trigger) {
+            trigger.focus();
+        }
+    });
+}
+
+// Apply focus management to all modals
+['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(manageModalFocus);
+</script>
 </body>
 </html>
