@@ -39,7 +39,7 @@ if (!$user) {
 
 // Define reward sets for each spin type
 $reward_sets = [
-    'registration' => [0, 50, 100, 150, 200, 250,], // Ksh rewards
+    'registration' => [0, 50, 100, 150, 200, 250], // Ksh rewards
     'weekly' => [0, 100, 200, 300, 400, 500],
     'bet' => [] // Will be calculated dynamically based on stake
 ];
@@ -324,19 +324,17 @@ if (count($name_parts) >= 1) {
         </div>
     </div>
 
-
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Top Navbar -->
         <div class="top-navbar">
-        <h2>LOOMA</h2>
+            <h2>LOOMA</h2>
             <div class="user-profile">
                 <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
                 <div>
                     <div class="fw-bold"><?php echo htmlspecialchars($user['username']); ?></div>
                 </div>
             </div>
-            
         </div>
 
         <!-- Game Section -->
@@ -565,8 +563,9 @@ if (count($name_parts) >= 1) {
                 const numSegments = spinResult.rewards.length;
                 const anglePerSegment = 360 / numSegments;
                 const winIndex = spinResult.rewards.indexOf(spinResult.amount);
-                const targetAngle = -((winIndex * anglePerSegment) + (anglePerSegment / 2));
-                const totalRotation = 360 * 5 - targetAngle; // 5 full spins + align center
+                // Adjust targetAngle to point to the center of the winning segment
+                const targetAngle = (winIndex * anglePerSegment); // Start of the winning segment
+                const totalRotation = 360 * 5 + targetAngle + (anglePerSegment / 2); // 5 full spins + center of segment
 
                 canvas.style.transition = 'transform 4s ease-out';
                 canvas.style.transform = `rotate(${totalRotation}deg)`;
