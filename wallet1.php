@@ -520,7 +520,7 @@ if ($user) {
                         <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#withdrawModal" <?php echo $balance < 50 ? 'disabled title="Insufficient balance (Min Ksh 50)"' : ''; ?>>Withdraw</button>
                     </div>
                 </div>
-                <div class="col-md-4 delay-2">
+                <!-- <div class="col-md-4 delay-2">
                     <div class="dashboard-card">
                         <div class="card-icon accent">
                             <i class="fas fa-users"></i>
@@ -529,7 +529,7 @@ if ($user) {
                         <div class="card-title">Referrals</div>
                         <a href="referrals.php" class="btn btn-sm btn-outline-danger">Invite Friends</a>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Deposit Form Modal -->
