@@ -18,10 +18,14 @@ header('X-Content-Type-Options: nosniff');
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+// Log session ID for debugging
+error_log("withdraw.php - Session ID: " . session_id());
+
 // Initialize variables
 $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'] ?? 'Unknown';
-$csrf_token = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32)); // Use existing session token or generate new
+// Use existing CSRF token if available, otherwise generate a new one
+$csrf_token = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
 $user = null;
 $balance = 0.00;
@@ -144,7 +148,7 @@ try {
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="wallet1.php" class="nav-link active">
+            <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
             </a>
@@ -221,7 +225,7 @@ try {
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item active">
+        <a href="wallet1.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
@@ -282,6 +286,10 @@ try {
             const submitButton = e.target.querySelector('button[type="submit"]');
             submitButton.disabled = true;
 
+            // Log CSRF token being sent
+            const csrfToken = formData.get('csrf_token');
+            console.log('withdraw.php - CSRF Token being sent:', csrfToken);
+
             try {
                 const response = await fetch('wallet1.php', {
                     method: 'POST',
@@ -292,6 +300,7 @@ try {
                 });
 
                 const result = await response.json();
+                console.log('withdraw.php - Server Response:', result);
                 if (result.success) {
                     alert(result.message);
                     setTimeout(() => window.location.href = 'wallet1.php', 1000);
@@ -299,6 +308,7 @@ try {
                     alert(result.message);
                 }
             } catch (error) {
+                console.error('withdraw.php - Error:', error);
                 alert('An error occurred while processing your request: ' + error.message);
             } finally {
                 submitButton.disabled = false;

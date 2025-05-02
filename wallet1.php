@@ -18,12 +18,16 @@ header('X-Content-Type-Options: nosniff');
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
+// Log session ID for debugging
+error_log("wallet1.php - Session ID: " . session_id());
+
 // Initialize variables with defaults
 $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'] ?? 'Unknown';
 $error = '';
 $success = '';
-$csrf_token = bin2hex(random_bytes(32));
+// Use existing CSRF token if available, otherwise generate a new one
+$csrf_token = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
 $user = null;
 $balance = 0.00;
@@ -106,6 +110,7 @@ try {
         // Debug CSRF token
         $submitted_token = $_POST['csrf_token'] ?? '';
         $session_token = $_SESSION['csrf_token'] ?? '';
+        error_log("wallet1.php - CSRF Check: Submitted=$submitted_token, Session=$session_token");
         if (!hash_equals($session_token, $submitted_token)) {
             error_log("CSRF Token Mismatch: Submitted=$submitted_token, Session=$session_token");
             $response['message'] = 'Invalid CSRF token';
