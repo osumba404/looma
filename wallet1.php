@@ -103,7 +103,11 @@ try {
         header('Content-Type: application/json');
         $response = ['success' => false, 'message' => ''];
 
-        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        // Debug CSRF token
+        $submitted_token = $_POST['csrf_token'] ?? '';
+        $session_token = $_SESSION['csrf_token'] ?? '';
+        if (!hash_equals($session_token, $submitted_token)) {
+            error_log("CSRF Token Mismatch: Submitted=$submitted_token, Session=$session_token");
             $response['message'] = 'Invalid CSRF token';
             echo json_encode($response);
             exit();

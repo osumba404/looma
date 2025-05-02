@@ -21,7 +21,7 @@ $dotenv->load();
 // Initialize variables
 $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'] ?? 'Unknown';
-$csrf_token = bin2hex(random_bytes(32));
+$csrf_token = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32)); // Use existing session token or generate new
 $_SESSION['csrf_token'] = $csrf_token;
 $user = null;
 $initials = '';
@@ -122,7 +122,7 @@ try {
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="wallet1.php" class="nav-link ctive">
+            <a href="wallet1.php" class="nav-link">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
             </a>
@@ -199,7 +199,7 @@ try {
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item active">
+        <a href="wallet1.php" class="mobile-nav-item">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
@@ -277,7 +277,7 @@ try {
                     alert(result.message);
                 }
             } catch (error) {
-                alert('An error occurred while processing your request.');
+                alert('An error occurred while processing your request: ' + error.message);
             } finally {
                 submitButton.disabled = false;
             }
