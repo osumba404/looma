@@ -1,7 +1,18 @@
 <?php
+session_start();
 require_once 'includes/db.php';
-require 'vendor/autoload.php';
+require 'vendor/autoload.php'; // Composer autoload for phpdotenv
 use Dotenv\Dotenv;
+
+// Redirect if not logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+// Security headers
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
 
 // Load environment variables
 $dotenv = Dotenv::createImmutable(__DIR__);
@@ -9,195 +20,268 @@ $dotenv->load();
 
 // Initialize variables
 $user_id = $_SESSION['user_id'];
-$csrf_token = $_SESSION['csrf_token'];
+$full_name = $_SESSION['full_name'] ?? 'Unknown';
+$csrf_token = bin2hex(random_bytes(32));
+$_SESSION['csrf_token'] = $csrf_token;
+$user = null;
+$initials = '';
+$error = ''; // Initialize $error to avoid undefined variable warning
 
-// Fetch user phone
 try {
-    if (!$conn) {
-        throw new Exception('Database connection failed');
-    }
-    $stmt = $conn->prepare('SELECT phone FROM users WHERE user_id = ?');
+    // Fetch user data
+    $stmt = $conn->prepare('SELECT full_name, username, phone FROM users WHERE user_id = ?');
     if ($stmt === false) {
         throw new Exception('Prepare failed: ' . $conn->error);
     }
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
     $stmt->close();
+
+    if (!$user) {
+        session_destroy();
+        header('Location: login.php?error=User not found');
+        exit();
+    }
+
+    // Get user initials
+    $name_parts = explode(' ', $user['full_name']);
+    if (count($name_parts) >= 1) {
+        $initials .= strtoupper(substr($name_parts[0], 0, 1));
+        if (count($name_parts) > 1) {
+            $initials .= strtoupper(substr($name_parts[1], 0, 1));
+        }
+    }
 } catch (Exception $e) {
     error_log('Error in deposit.php: ' . $e->getMessage());
-    header('Content-Type: application/json');
-    echo json_encode(['status' => 'error', 'message' => 'An error occurred: ' . htmlspecialchars($e->getMessage()) . '. Please try again or contact support.']);
-    exit();
-}
-
-// Handle deposit form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deposit'])) {
-    header('Content-Type: application/json');
-    try {
-        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            error_log('CSRF token mismatch. Session: ' . $_SESSION['csrf_token'] . ', Post: ' . $_POST['csrf_token']);
-            throw new Exception('Invalid CSRF token');
-        }
-
-        $amount = floatval($_POST['amount']);
-        $phone = trim($_POST['phone']);
-
-        if ($amount < 1) {
-            throw new Exception('Minimum deposit amount is Ksh 1');
-        }
-        if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-            throw new Exception('Invalid phone number. Use format: +2547XXXXXXXX');
-        }
-
-        $access_token = getAccessToken();
-        $stk_response = initiateSTKPush($access_token, $amount, $phone, 'Deposit to Looma');
-
-        if ($stk_response['ResponseCode'] === '0') {
-            $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
-            if ($stmt === false) {
-                throw new Exception('Prepare failed: ' . $conn->error);
-            }
-            $type = 'deposit';
-            $transaction_id = $stk_response['CheckoutRequestID'];
-            $status = 'pending';
-            $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
-            $stmt->execute();
-            $stmt->close();
-
-            echo json_encode(['status' => 'success', 'message' => 'Deposit request of Ksh ' . number_format($amount, 2) . ' initiated. Please check your phone to complete the payment.']);
-        } else {
-            throw new Exception('Failed to initiate deposit: ' . ($stk_response['errorMessage'] ?? 'Unknown error'));
-        }
-    } catch (Exception $e) {
-        error_log('Error in deposit.php: ' . $e->getMessage());
-        echo json_encode(['status' => 'error', 'message' => htmlspecialchars($e->getMessage())]);
-    }
-    exit();
-}
-
-// Get access token for M-Pesa API
-function getAccessToken() {
-    $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
-           $_ENV['MPESA_SANDBOX_URL'] . '/oauth/v1/generate?grant_type=client_credentials' : 
-           $_ENV['MPESA_PRODUCTION_URL'] . '/oauth/v1/generate?grant_type=client_credentials';
-    
-    $credentials = base64_encode($_ENV['MPESA_CONSUMER_KEY'] . ':' . $_ENV['MPESA_CONSUMER_SECRET']);
-    
-    $curl = curl_init();
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Basic ' . $credentials,
-            'Content-Type: application/json'
-        ],
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_CONNECTTIMEOUT => 5
-    ]);
-    
-    $start_time = microtime(true);
-    $response = curl_exec($curl);
-    $end_time = microtime(true);
-    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    $error = curl_error($curl);
-    curl_close($curl);
-    
-    error_log('M-Pesa getAccessToken took ' . ($end_time - $start_time) . ' seconds');
-    if ($http_code !== 200 || $error) {
-        throw new Exception('Failed to get access token: ' . ($error ?: 'HTTP ' . $http_code));
-    }
-    
-    $data = json_decode($response, true);
-    return $data['access_token'];
-}
-
-// Initiate STK Push for C2B
-function initiateSTKPush($access_token, $amount, $phone, $description) {
-    $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
-           $_ENV['MPESA_SANDBOX_URL'] . '/mpesa/stkpush/v1/processrequest' : 
-           $_ENV['MPESA_PRODUCTION_URL'] . '/mpesa/stkpush/v1/processrequest';
-    
-    $timestamp = date('YmdHis');
-    $password = base64_encode($_ENV['MPESA_C2B_SHORTCODE'] . $_ENV['MPESA_PASSKEY'] . $timestamp);
-    
-    $payload = [
-        'BusinessShortCode' => $_ENV['MPESA_C2B_SHORTCODE'],
-        'Password' => $password,
-        'Timestamp' => $timestamp,
-        'TransactionType' => 'CustomerPayBillOnline',
-        'Amount' => $amount,
-        'PartyA' => $phone,
-        'PartyB' => $_ENV['MPESA_C2B_SHORTCODE'],
-        'PhoneNumber' => $phone,
-        'CallBackURL' => $_ENV['MPESA_RESULT_URL'],
-        'AccountReference' => 'LoomaDeposit_' . time(),
-        'TransactionDesc' => $description
-    ];
-    
-    $curl = curl_init();
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $access_token,
-            'Content-Type: application/json'
-        ],
-        CURLOPT_TIMEOUT => 10,
-        CURLOPT_CONNECTTIMEOUT => 5
-    ]);
-    
-    $start_time = microtime(true);
-    $response = curl_exec($curl);
-    $end_time = microtime(true);
-    $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    $error = curl_error($curl);
-    curl_close($curl);
-    
-    error_log('M-Pesa initiateSTKPush took ' . ($end_time - $start_time) . ' seconds');
-    if ($http_code !== 200 || $error) {
-        throw new Exception('STK Push request failed: ' . ($error ?: 'HTTP ' . $http_code));
-    }
-    
-    $data = json_decode($response, true);
-    if (isset($data['errorCode'])) {
-        throw new Exception('STK Push error: ' . $data['errorMessage']);
-    }
-    
-    return $data;
+    $error = '<script>alert("' . htmlspecialchars($e->getMessage()) . '");</script>';
 }
 ?>
 
-<!-- Deposit Form Modal -->
-<div class="modal fade" id="depositModal" tabindex="-1" aria-labelledby="depositModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="depositModalLabel">Deposit Funds</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looma | Deposit Funds</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+    <style>
+        .dashboard-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .card-icon.success { color: #00cec9; }
+        .deposit-form {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .animate-fadeIn {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        .animate-fadeIn.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @media (max-width: 576px) {
+            .deposit-form {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Desktop Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <h2>LOOMA</h2>
+            <p>Earn While You Play</p>
+        </div>
+        <nav class="nav flex-column">
+            <a href="index1.php" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="games.php" class="nav-link">
+                <i class="fas fa-gamepad"></i>
+                <span>Games</span>
+            </a>
+            <a href="wallet1.php" class="nav-link">
+                <i class="fas fa-chart-line"></i>
+                <span>Earnings</span>
+            </a>
+            <a href="referrals.php" class="nav-link">
+                <i class="fas fa-users"></i>
+                <span>Referrals</span>
+            </a>
+            <a href="settings.php" class="nav-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="logout.php" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log out</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <p>© 2025 Looma</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Navbar -->
+        <div class="top-navbar">
+            <h2>LOOMA</h2>
+            <div class="user-profile">
+                <div class="user-avatar"><?php echo htmlspecialchars($initials); ?></div>
+                <div>
+                    <div class="fw-bold"><?php echo htmlspecialchars($user['username'] ?? 'Unknown'); ?></div>
+                </div>
             </div>
-            <div class="modal-body" role="dialog" aria-describedby="depositModalDescription">
-                <p id="depositModalDescription" class="sr-only">Form to deposit funds into your Looma wallet.</p>
-                <form method="POST" id="depositForm" class="deposit-form">
-                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                    <div class="mb-3">
-                        <label for="deposit_amount" class="form-label">Amount (Ksh)</label>
-                        <input type="number" class="form-control" id="deposit_amount" name="amount" min="1" step="0.01" autocomplete="off" required>
-                        <small class="form-text text-muted">Minimum deposit: Ksh 1</small>
+        </div>
+
+        <!-- Content Container -->
+        <div class="content-container">
+            <?php echo $error; ?>
+
+            <div class="row justify-content-center animate-fadeIn">
+                <div class="col-md-6">
+                    <div class="dashboard-card">
+                        <div class="card-icon success">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <h3 class="card-title">Deposit Funds</h3>
+                        <form id="depositForm" class="deposit-form" method="POST" action="wallet1.php">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                            <input type="hidden" name="deposit" value="1">
+                            <div class="mb-3">
+                                <label for="deposit_amount" class="form-label">Amount (Ksh)</label>
+                                <input type="number" class="form-control" id="deposit_amount" name="amount" min="100" step="0.01" required>
+                                <small class="form-text text-muted">Minimum deposit: Ksh 100</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
+                                <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
+                                <small class="form-text text-muted">Phone number from your account</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Submit Deposit</button>
+                        </form>
                     </div>
-                    <div class="mb-3">
-                        <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
-                        <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" autocomplete="tel" required>
-                        <small class="form-text text-muted">Format: +2547XXXXXXXX</small>
-                    </div>
-                    <button type="submit" name="deposit" class="btn btn-primary w-100">Submit Deposit</button>
-                    <div class="loading-spinner" id="depositLoadingSpinner">
-                        <i class="fas fa-spinner fa-spin"></i> Processing...
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Mobile Bottom Navigation -->
+    <div class="mobile-bottom-nav">
+        <a href="index1.php" class="mobile-nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="games.php" class="mobile-nav-item">
+            <i class="fas fa-gamepad"></i>
+            <span>Games</span>
+        </a>
+        <a href="wallet1.php" class="mobile-nav-item">
+            <i class="fas fa-wallet"></i>
+            <span>Earnings</span>
+        </a>
+        <a href="referrals.php" class="mobile-nav-item">
+            <i class="fas fa-users"></i>
+            <span>Refer</span>
+        </a>
+        <a href="settings.php" class="mobile-nav-item">
+            <i class="fas fa-user"></i>
+            <span>Account</span>
+        </a>
+        <a href="logout.php" class="mobile-nav-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Log out</span>
+        </a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js?v=1.0"></script>
+    <script>
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
+        }
+
+        // Responsive navigation
+        function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            if (window.innerWidth < 992) {
+                sidebar.classList.remove('active');
+                mainContent.classList.remove('main-content-expanded');
+            } else {
+                sidebar.classList.add('active');
+                mainContent.classList.remove('main-content-expanded');
+            }
+        }
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
+
+        // Animation observer
+        const animateElements = document.querySelectorAll('.animate-fadeIn');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, { threshold: 0.1 });
+        animateElements.forEach(element => observer.observe(element));
+
+        // Handle form submission with AJAX
+        document.getElementById('depositForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch('wallet1.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    setTimeout(() => window.location.href = 'wallet1.php', 1000);
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('An error occurred while processing your request.');
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

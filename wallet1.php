@@ -398,29 +398,12 @@ if ($user) {
         }
         .delay-1 { transition-delay: 0.2s; }
         .delay-2 { transition-delay: 0.4s; }
-        .withdrawal-form, .deposit-form {
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        .modal-content {
-            border-radius: 10px;
-        }
-        .modal-header {
-            background: #6c5ce7;
-            color: white;
-        }
         @media (max-width: 576px) {
             .dashboard-card {
                 padding: 15px;
             }
             .card-value {
                 font-size: 1.5rem;
-            }
-            .withdrawal-form, .deposit-form {
-                padding: 15px;
             }
         }
     </style>
@@ -505,8 +488,8 @@ if ($user) {
                         </div>
                         <div class="card-value">Ksh<?php echo htmlspecialchars(number_format($balance, 2)); ?></div>
                         <div class="card-title">Available Balance</div>
-                        <button class="btn btn-sm btn-outline-success me-2" data-bs-toggle="modal" data-bs-target="#depositModal">Deposit</button>
-                        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#withdrawModal" <?php echo $balance < 200 ? 'disabled title="Insufficient balance (Min Ksh 200)"' : ''; ?>>Withdraw</button>
+                        <a href="deposit.php" class="btn btn-sm btn-outline-success me-2">Deposit</a>
+                        <a href="withdraw.php" class="btn btn-sm btn-outline-success" <?php echo $balance < 200 ? 'disabled title="Insufficient balance (Min Ksh 200)"' : ''; ?>>Withdraw</a>
                     </div>
                 </div>
                 <div class="col-md-4 delay-2">
@@ -517,100 +500,6 @@ if ($user) {
                         <div class="card-value"><?php echo htmlspecialchars($referral_count); ?></div>
                         <div class="card-title">Referrals</div>
                         <a href="referrals.php" class="btn btn-sm btn-outline-danger">Invite Friends</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Deposit Form Modal -->
-            <div class="modal fade" id="depositModal" tabindex="-1" aria-labelledby="depositModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="depositModalLabel">Deposit Funds</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="depositForm" class="deposit-form">
-                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                <input type="hidden" name="deposit" value="1">
-                                <div class="mb-3">
-                                    <label for="deposit_amount" class="form-label">Amount (Ksh)</label>
-                                    <input type="number" class="form-control" id="deposit_amount" name="amount" min="100" step="0.01" required>
-                                    <small class="form-text text-muted">Minimum deposit: Ksh 100</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
-                                    <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
-                                    <small class="form-text text-muted">Format: +2547XXXXXXXX</small>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100">Submit Deposit</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Withdrawal Form Modal -->
-            <div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="withdrawModalLabel">Withdraw Funds</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="withdrawForm" class="withdrawal-form">
-                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                <input type="hidden" name="withdraw" value="1">
-                                <div class="mb-3">
-                                    <label for="amount" class="form-label">Amount (Ksh)</label>
-                                    <input type="number" class="form-control" id="amount" name="amount" min="200" step="0.01" required>
-                                    <small class="form-text text-muted">Minimum withdrawal: Ksh 200</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="phone" class="form-label">M-Pesa Phone Number</label>
-                                    <input type="text" class="form-control" id="phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
-                                    <small class="form-text text-muted">Format: +2547XXXXXXXX</small>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100">Submit Withdrawal</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Success Modal -->
-            <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="successModalLabel">Success!</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body" id="successMessage">
-                            Transaction initiated successfully.
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Error Modal -->
-            <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body" id="errorMessage">
-                            An error occurred.
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -726,7 +615,7 @@ if ($user) {
         }, { threshold: 0.1 });
         animateElements.forEach(element => observer.observe(element));
 
-        // Modal functions
+        // Modal functions (kept for potential future use or errors)
         function showSuccessModal(message) {
             const modal = new bootstrap.Modal(document.getElementById('successModal'));
             document.getElementById('successMessage').innerText = message;
@@ -738,89 +627,6 @@ if ($user) {
             document.getElementById('errorMessage').innerText = message;
             modal.show();
         }
-
-        // Handle form submissions via AJAX
-        function handleFormSubmission(formId, modalId) {
-            const form = document.getElementById(formId);
-            const modal = document.getElementById(modalId);
-            const bootstrapModal = bootstrap.Modal.getInstance(modal);
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form);
-                const submitButton = form.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-
-                try {
-                    const response = await fetch('wallet1.php', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    const result = await response.json();
-                    bootstrapModal.hide();
-
-                    if (result.success) {
-                        showSuccessModal(result.message);
-                        setTimeout(() => window.location.reload(), 2000); // Refresh to update balance
-                    } else {
-                        showErrorModal(result.message);
-                    }
-                } catch (error) {
-                    bootstrapModal.hide();
-                    showErrorModal('An error occurred while processing your request.');
-                } finally {
-                    submitButton.disabled = false;
-                }
-            });
-        }
-
-        // Initialize form handlers
-        handleFormSubmission('depositForm', 'depositModal');
-        handleFormSubmission('withdrawForm', 'withdrawModal');
-
-        // Ensure modals are properly closed
-        ['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(modalId => {
-            const modalEl = document.getElementById(modalId);
-            modalEl.addEventListener('hidden.bs.modal', () => {
-                document.body.classList.remove('modal-open');
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                backdrops.forEach(backdrop => backdrop.remove());
-                modalEl.style.display = 'none';
-            });
-        });
-
-        // Manage focusable elements in modals
-        function manageModalFocus(modalId) {
-            const modal = document.getElementById(modalId);
-            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-
-            modal.addEventListener('shown.bs.modal', () => {
-                focusableElements.forEach(el => {
-                    el.removeAttribute('tabindex');
-                });
-                const firstFocusable = focusableElements[0];
-                if (firstFocusable) {
-                    firstFocusable.focus();
-                }
-            });
-
-            modal.addEventListener('hidden.bs.modal', () => {
-                focusableElements.forEach(el => {
-                    el.setAttribute('tabindex', '-1');
-                });
-                const trigger = document.querySelector(`[data-bs-target="#${modalId}"]`) || document.querySelector(`[data-bs-toggle="modal"][data-bs-target="#${modalId}"]`);
-                if (trigger) {
-                    trigger.focus();
-                }
-            });
-        }
-
-        // Apply focus management to all modals
-        ['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(manageModalFocus);
     </script>
 </body>
 </html>
