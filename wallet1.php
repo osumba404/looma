@@ -26,7 +26,6 @@ $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['full_name'] ?? 'Unknown';
 $error = '';
 $success = '';
-// Use existing CSRF token if available, otherwise generate a new one
 $csrf_token = $_SESSION['csrf_token'] ?? bin2hex(random_bytes(32));
 $_SESSION['csrf_token'] = $csrf_token;
 $user = null;
@@ -241,10 +240,12 @@ function getAccessToken() {
     curl_close($curl);
     
     if ($http_code !== 200 || $error) {
+        error_log("getAccessToken - Failed: HTTP $http_code, Error: $error, Response: $response");
         throw new Exception('Failed to get access token: ' . ($error ?: 'HTTP ' . $http_code));
     }
     
     $data = json_decode($response, true);
+    error_log("getAccessToken - Success: Access Token: " . $data['access_token']);
     return $data['access_token'];
 }
 
@@ -271,6 +272,9 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
         'TransactionDesc' => $description
     ];
     
+    // Log the payload for debugging
+    error_log("initiateSTKPush - Payload: " . json_encode($payload));
+    
     $curl = curl_init();
     curl_setopt_array($curl, [
         CURLOPT_URL => $url,
@@ -288,8 +292,11 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     $error = curl_error($curl);
     curl_close($curl);
     
+    // Log the response for debugging
+    error_log("initiateSTKPush - HTTP Code: $http_code, Error: $error, Response: $response");
+    
     if ($http_code !== 200 || $error) {
-        throw new Exception('STK Push request failed: ' . ($error ?: 'HTTP ' . $http_code));
+        throw new Exception('STK Push request failed: HTTP ' . $http_code . ', Error: ' . $error);
     }
     
     $data = json_decode($response, true);
