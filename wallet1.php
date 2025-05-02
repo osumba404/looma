@@ -114,8 +114,8 @@ try {
 
         if (isset($_POST['deposit'])) {
             // Validation
-            if ($amount < 1) {
-                $response['message'] = 'Minimum deposit amount is Ksh 1';
+            if ($amount < 100) {
+                $response['message'] = 'Minimum deposit amount is Ksh 100';
                 echo json_encode($response);
                 exit();
             }
@@ -151,8 +151,8 @@ try {
             }
         } elseif (isset($_POST['withdraw'])) {
             // Validation
-            if ($amount < 50) {
-                $response['message'] = 'Minimum withdrawal amount is Ksh 50';
+            if ($amount < 200) {
+                $response['message'] = 'Minimum withdrawal amount is Ksh 200';
                 echo json_encode($response);
                 exit();
             }
@@ -172,7 +172,7 @@ try {
             $b2c_response = initiateB2C($access_token, $amount, $phone, 'Withdrawal from Looma');
 
             if ($b2c_response['ResponseCode'] === '0') {
-                // Insert transaction as pending
+                // Insert transaction as pending (no balance deduction yet)
                 $stmt = $conn->prepare('INSERT INTO transactions (user_id, type, amount, phone_number, transaction_id, status) VALUES (?, ?, ?, ?, ?, ?)');
                 if ($stmt === false) {
                     $response['message'] = 'Database error';
@@ -186,19 +186,8 @@ try {
                 $stmt->execute();
                 $stmt->close();
 
-                // Deduct amount from wallet
-                $stmt = $conn->prepare('UPDATE wallet SET balance = balance - ?, last_interact = NOW() WHERE user_id = ?');
-                if ($stmt === false) {
-                    $response['message'] = 'Database error';
-                    echo json_encode($response);
-                    exit();
-                }
-                $stmt->bind_param('di', $amount, $user_id);
-                $stmt->execute();
-                $stmt->close();
-
                 $response['success'] = true;
-                $response['message'] = 'Withdrawal request of Ksh ' . number_format($amount, 2) . ' initiated. You will receive a confirmation soon.';
+                $response['message'] = 'Withdrawal request of Ksh ' . number_format($amount, 2) . ' initiated. Awaiting confirmation.';
             } else {
                 $response['message'] = 'Failed to initiate withdrawal: ' . ($b2c_response['errorMessage'] ?? 'Unknown error');
             }
@@ -517,10 +506,10 @@ if ($user) {
                         <div class="card-value">Ksh<?php echo htmlspecialchars(number_format($balance, 2)); ?></div>
                         <div class="card-title">Available Balance</div>
                         <button class="btn btn-sm btn-outline-success me-2" data-bs-toggle="modal" data-bs-target="#depositModal">Deposit</button>
-                        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#withdrawModal" <?php echo $balance < 50 ? 'disabled title="Insufficient balance (Min Ksh 50)"' : ''; ?>>Withdraw</button>
+                        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#withdrawModal" <?php echo $balance < 200 ? 'disabled title="Insufficient balance (Min Ksh 200)"' : ''; ?>>Withdraw</button>
                     </div>
                 </div>
-                <!-- <div class="col-md-4 delay-2">
+                <div class="col-md-4 delay-2">
                     <div class="dashboard-card">
                         <div class="card-icon accent">
                             <i class="fas fa-users"></i>
@@ -529,7 +518,7 @@ if ($user) {
                         <div class="card-title">Referrals</div>
                         <a href="referrals.php" class="btn btn-sm btn-outline-danger">Invite Friends</a>
                     </div>
-                </div> -->
+                </div>
             </div>
 
             <!-- Deposit Form Modal -->
@@ -701,139 +690,137 @@ if ($user) {
         </a>
     </div>
 
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js?v=1.0"></script>
-<script>
-// Toggle sidebar
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    sidebar.classList.toggle('active');
-    mainContent.classList.toggle('main-content-expanded');
-}
-
-// Responsive navigation
-function handleResize() {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    if (window.innerWidth < 992) {
-        sidebar.classList.remove('active');
-        mainContent.classList.remove('main-content-expanded');
-    } else {
-        sidebar.classList.add('active');
-        mainContent.classList.remove('main-content-expanded');
-    }
-}
-window.addEventListener('resize', handleResize);
-document.addEventListener('DOMContentLoaded', handleResize);
-
-// Animation observer
-const animateElements = document.querySelectorAll('.animate-fadeIn');
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('animate');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js?v=1.0"></script>
+    <script>
+        // Toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            sidebar.classList.toggle('active');
+            mainContent.classList.toggle('main-content-expanded');
         }
-    });
-}, { threshold: 0.1 });
-animateElements.forEach(element => observer.observe(element));
 
-// Modal functions
-function showSuccessModal(message) {
-    const modal = new bootstrap.Modal(document.getElementById('successModal'));
-    document.getElementById('successMessage').innerText = message;
-    modal.show();
-}
+        // Responsive navigation
+        function handleResize() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            if (window.innerWidth < 992) {
+                sidebar.classList.remove('active');
+                mainContent.classList.remove('main-content-expanded');
+            } else {
+                sidebar.classList.add('active');
+                mainContent.classList.remove('main-content-expanded');
+            }
+        }
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('DOMContentLoaded', handleResize);
 
-function showErrorModal(message) {
-    const modal = new bootstrap.Modal(document.getElementById('errorModal'));
-    document.getElementById('errorMessage').innerText = message;
-    modal.show();
-}
+        // Animation observer
+        const animateElements = document.querySelectorAll('.animate-fadeIn');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, { threshold: 0.1 });
+        animateElements.forEach(element => observer.observe(element));
 
-// Handle form submissions via AJAX
-function handleFormSubmission(formId, modalId) {
-    const form = document.getElementById(formId);
-    const modal = document.getElementById(modalId);
-    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+        // Modal functions
+        function showSuccessModal(message) {
+            const modal = new bootstrap.Modal(document.getElementById('successModal'));
+            document.getElementById('successMessage').innerText = message;
+            modal.show();
+        }
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
+        function showErrorModal(message) {
+            const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+            document.getElementById('errorMessage').innerText = message;
+            modal.show();
+        }
 
-        try {
-            const response = await fetch('wallet1.php', {
-                method: 'POST', // Fixed: Changed 'methods' to 'method'
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+        // Handle form submissions via AJAX
+        function handleFormSubmission(formId, modalId) {
+            const form = document.getElementById(formId);
+            const modal = document.getElementById(modalId);
+            const bootstrapModal = bootstrap.Modal.getInstance(modal);
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+
+                try {
+                    const response = await fetch('wallet1.php', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const result = await response.json();
+                    bootstrapModal.hide();
+
+                    if (result.success) {
+                        showSuccessModal(result.message);
+                        setTimeout(() => window.location.reload(), 2000); // Refresh to update balance
+                    } else {
+                        showErrorModal(result.message);
+                    }
+                } catch (error) {
+                    bootstrapModal.hide();
+                    showErrorModal('An error occurred while processing your request.');
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+        }
+
+        // Initialize form handlers
+        handleFormSubmission('depositForm', 'depositModal');
+        handleFormSubmission('withdrawForm', 'withdrawModal');
+
+        // Ensure modals are properly closed
+        ['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(modalId => {
+            const modalEl = document.getElementById(modalId);
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                document.body.classList.remove('modal-open');
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(backdrop => backdrop.remove());
+                modalEl.style.display = 'none';
+            });
+        });
+
+        // Manage focusable elements in modals
+        function manageModalFocus(modalId) {
+            const modal = document.getElementById(modalId);
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+
+            modal.addEventListener('shown.bs.modal', () => {
+                focusableElements.forEach(el => {
+                    el.removeAttribute('tabindex');
+                });
+                const firstFocusable = focusableElements[0];
+                if (firstFocusable) {
+                    firstFocusable.focus();
                 }
             });
 
-            const result = await response.json();
-            bootstrapModal.hide();
-
-            if (result.success) {
-                showSuccessModal(result.message);
-                setTimeout(() => window.location.reload(), 2000); // Refresh to update balance
-            } else {
-                showErrorModal(result.message);
-            }
-        } catch (error) {
-            bootstrapModal.hide();
-            showErrorModal('An error occurred while processing your request.');
-        } finally {
-            submitButton.disabled = false;
+            modal.addEventListener('hidden.bs.modal', () => {
+                focusableElements.forEach(el => {
+                    el.setAttribute('tabindex', '-1');
+                });
+                const trigger = document.querySelector(`[data-bs-target="#${modalId}"]`) || document.querySelector(`[data-bs-toggle="modal"][data-bs-target="#${modalId}"]`);
+                if (trigger) {
+                    trigger.focus();
+                }
+            });
         }
-    });
-}
 
-// Initialize form handlers
-handleFormSubmission('depositForm', 'depositModal');
-handleFormSubmission('withdrawForm', 'withdrawModal');
-
-// Ensure modals are properly closed
-['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(modalId => {
-    const modalEl = document.getElementById(modalId);
-    modalEl.addEventListener('hidden.bs.modal', () => {
-        document.body.classList.remove('modal-open');
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        backdrops.forEach(backdrop => backdrop.remove());
-        modalEl.style.display = 'none';
-    });
-});
-
-// Manage focusable elements in modals
-function manageModalFocus(modalId) {
-    const modal = document.getElementById(modalId);
-    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-
-    modal.addEventListener('shown.bs.modal', () => {
-        focusableElements.forEach(el => {
-            el.removeAttribute('tabindex');
-        });
-        // Trap focus within the modal
-        const firstFocusable = focusableElements[0];
-        if (firstFocusable) {
-            firstFocusable.focus();
-        }
-    });
-
-    modal.addEventListener('hidden.bs.modal', () => {
-        focusableElements.forEach(el => {
-            el.setAttribute('tabindex', '-1');
-        });
-        // Return focus to the element that triggered the modal
-        const trigger = document.querySelector(`[data-bs-target="#${modalId}"]`) || document.querySelector(`[data-bs-toggle="modal"][data-bs-target="#${modalId}"]`);
-        if (trigger) {
-            trigger.focus();
-        }
-    });
-}
-
-// Apply focus management to all modals
-['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(manageModalFocus);
-</script>
+        // Apply focus management to all modals
+        ['depositModal', 'withdrawModal', 'successModal', 'errorModal'].forEach(manageModalFocus);
+    </script>
 </body>
 </html>
