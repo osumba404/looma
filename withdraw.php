@@ -144,7 +144,7 @@ try {
                 <i class="fas fa-gamepad"></i>
                 <span>Games</span>
             </a>
-            <a href="wallet1.php" class="nav-link">
+            <a href="wallet1.php" class="nav-link active">
                 <i class="fas fa-chart-line"></i>
                 <span>Earnings</span>
             </a>
@@ -221,7 +221,7 @@ try {
             <i class="fas fa-gamepad"></i>
             <span>Games</span>
         </a>
-        <a href="wallet1.php" class="mobile-nav-item">
+        <a href="wallet1.php" class="mobile-nav-item active">
             <i class="fas fa-wallet"></i>
             <span>Earnings</span>
         </a>
