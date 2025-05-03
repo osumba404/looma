@@ -128,7 +128,7 @@ try {
                 exit();
             }
             if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX';
+                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX (e.g., +254712345678)';
                 echo json_encode($response);
                 exit();
             }
@@ -170,7 +170,7 @@ try {
                 exit();
             }
             if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX';
+                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX (e.g., +254712345678)';
                 echo json_encode($response);
                 exit();
             }
@@ -258,11 +258,15 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     $timestamp = date('YmdHis');
     $password = base64_encode($_ENV['MPESA_C2B_SHORTCODE'] . $_ENV['MPESA_PASSKEY'] . $timestamp);
     
-    // Validate and normalize phone number
-    $normalized_phone = preg_replace('/^0/', '+254', $phone); // Convert 07XX to +2547XX if needed
-    if (!preg_match('/^\+2547[0-9]{8}$/', $normalized_phone)) {
-        throw new Exception('Invalid phone number format: ' . $normalized_phone);
+    // Log the raw input phone number for debugging
+    error_log("initiateSTKPush - Raw Input Phone: $phone");
+    
+    // Validate phone number (already in database format)
+    if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
+        throw new Exception('Invalid phone number format: ' . $phone . '. Expected format: +2547XXXXXXXX (e.g., +254712345678)');
     }
+    $normalized_phone = $phone; // Use as-is since it matches the expected format
+    error_log("initiateSTKPush - Normalized Phone: $normalized_phone");
 
     $payload = [
         'BusinessShortCode' => (int)$_ENV['MPESA_C2B_SHORTCODE'], // Cast to integer as per sandbox
