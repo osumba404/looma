@@ -327,6 +327,11 @@ function initiateB2C($access_token, $amount, $phone, $remarks) {
         throw new Exception('Invalid phone number format for B2C: ' . $normalized_phone . '. Expected format: 2547XXXXXXXX');
     }
 
+    // Validate required environment variables
+    if (empty($_ENV['MPESA_INITIATOR_NAME']) || empty($_ENV['MPESA_SECURITY_CREDENTIAL']) || empty($_ENV['MPESA_B2C_SHORTCODE'])) {
+        throw new Exception('Missing or invalid M-Pesa configuration in .env');
+    }
+
     $payload = [
         'OriginatorConversationID' => $originator_conversation_id,
         'InitiatorName' => $_ENV['MPESA_INITIATOR_NAME'],
@@ -354,21 +359,26 @@ function initiateB2C($access_token, $amount, $phone, $remarks) {
             'Authorization: Bearer ' . $access_token,
             'Content-Type: application/json'
         ],
+        CURLOPT_TIMEOUT => 30, // Add timeout to prevent hanging
     ]);
     
     $response = curl_exec($curl);
     $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
     $error = curl_error($curl);
+    $errno = curl_errno($curl);
     curl_close($curl);
     
-    // Log the full response for debugging
-    error_log("initiateB2C - HTTP Code: $http_code, Error: $error, Response: " . ($response ?: 'Empty response'));
+    // Log detailed response for debugging
+    error_log("initiateB2C - HTTP Code: $http_code, Error: $error (Errno: $errno), Response: " . ($response ?: 'Empty response'));
     
     if ($http_code !== 200 || $error) {
-        throw new Exception('B2C request failed: HTTP ' . $http_code . ', Error: ' . $error . ', Response: ' . ($response ?: 'Empty response'));
+        throw new Exception('B2C request failed: HTTP ' . $http_code . ', Error: ' . $error . ' (Errno: ' . $errno . '), Response: ' . ($response ?: 'Empty response'));
     }
     
     $data = json_decode($response, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new Exception('Failed to decode B2C response: ' . json_last_error_msg() . ', Raw Response: ' . $response);
+    }
     if (isset($data['errorCode'])) {
         throw new Exception('B2C error: ' . $data['errorMessage']);
     }
