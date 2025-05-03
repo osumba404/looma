@@ -188,7 +188,7 @@ try {
                     exit();
                 }
                 $type = 'withdrawal';
-                $transaction_id = $b2c_response['ConversationID'];
+                $transaction_id = $b2c_response['OriginatorConversationID'];
                 $status = 'pending';
                 $stmt->bind_param('isdsss', $user_id, $type, $amount, $phone, $transaction_id, $status);
                 $stmt->execute();
@@ -249,7 +249,7 @@ function getAccessToken() {
     return $data['access_token'];
 }
 
-// Initiate STK Push for C2B
+// Initiate STK Push for C2B (aligned with sandbox requirements)
 function initiateSTKPush($access_token, $amount, $phone, $description) {
     $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
            $_ENV['MPESA_SANDBOX_URL'] . '/mpesa/stkpush/v1/processrequest' : 
@@ -258,22 +258,28 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     $timestamp = date('YmdHis');
     $password = base64_encode($_ENV['MPESA_C2B_SHORTCODE'] . $_ENV['MPESA_PASSKEY'] . $timestamp);
     
+    // Validate and normalize phone number
+    $normalized_phone = preg_replace('/^0/', '+254', $phone); // Convert 07XX to +2547XX if needed
+    if (!preg_match('/^\+2547[0-9]{8}$/', $normalized_phone)) {
+        throw new Exception('Invalid phone number format: ' . $normalized_phone);
+    }
+
     $payload = [
-        'BusinessShortCode' => $_ENV['MPESA_C2B_SHORTCODE'],
+        'BusinessShortCode' => (int)$_ENV['MPESA_C2B_SHORTCODE'], // Cast to integer as per sandbox
         'Password' => $password,
         'Timestamp' => $timestamp,
         'TransactionType' => 'CustomerPayBillOnline',
-        'Amount' => $amount,
-        'PartyA' => $phone,
-        'PartyB' => $_ENV['MPESA_C2B_SHORTCODE'],
-        'PhoneNumber' => $phone,
+        'Amount' => (int)$amount, // Cast to integer as M-Pesa requires whole numbers
+        'PartyA' => $normalized_phone,
+        'PartyB' => (int)$_ENV['MPESA_C2B_SHORTCODE'], // Cast to integer
+        'PhoneNumber' => $normalized_phone,
         'CallBackURL' => $_ENV['MPESA_RESULT_URL'],
         'AccountReference' => 'LoomaDeposit_' . time(),
         'TransactionDesc' => $description
     ];
     
     // Log the payload for debugging
-    error_log("initiateSTKPush - Payload: " . json_encode($payload));
+    error_log("initiateSTKPush - Payload: " . json_encode($payload, JSON_PRETTY_PRINT));
     
     $curl = curl_init();
     curl_setopt_array($curl, [
@@ -292,11 +298,11 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     $error = curl_error($curl);
     curl_close($curl);
     
-    // Log the response for debugging
-    error_log("initiateSTKPush - HTTP Code: $http_code, Error: $error, Response: $response");
+    // Log the full response for debugging
+    error_log("initiateSTKPush - HTTP Code: $http_code, Error: $error, Response: " . ($response ?: 'Empty response'));
     
     if ($http_code !== 200 || $error) {
-        throw new Exception('STK Push request failed: HTTP ' . $http_code . ', Error: ' . $error);
+        throw new Exception('STK Push request failed: HTTP ' . $http_code . ', Error: ' . $error . ', Response: ' . ($response ?: 'Empty response'));
     }
     
     $data = json_decode($response, true);
@@ -307,24 +313,36 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     return $data;
 }
 
-// Initiate B2C transaction
+// Initiate B2C transaction (aligned with sandbox simulation)
 function initiateB2C($access_token, $amount, $phone, $remarks) {
     $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
            $_ENV['MPESA_SANDBOX_URL'] . '/mpesa/b2c/v3/paymentrequest' : 
            $_ENV['MPESA_PRODUCTION_URL'] . '/mpesa/b2c/v3/paymentrequest';
     
+    $originator_conversation_id = uniqid(); // Generate a unique ID for each transaction
+    
+    // Normalize phone number for PartyB (remove + prefix to match sandbox format)
+    $normalized_phone = preg_replace('/^\+/', '', $phone); // Convert +2547XX to 2547XX
+    if (!preg_match('/^2547[0-9]{8}$/', $normalized_phone)) {
+        throw new Exception('Invalid phone number format for B2C: ' . $normalized_phone . '. Expected format: 2547XXXXXXXX');
+    }
+
     $payload = [
+        'OriginatorConversationID' => $originator_conversation_id,
         'InitiatorName' => $_ENV['MPESA_INITIATOR_NAME'],
         'SecurityCredential' => $_ENV['MPESA_SECURITY_CREDENTIAL'],
         'CommandID' => 'BusinessPayment',
-        'Amount' => $amount,
-        'PartyA' => $_ENV['MPESA_B2C_SHORTCODE'],
-        'PartyB' => $phone,
+        'Amount' => (int)$amount, // Cast to integer
+        'PartyA' => (int)$_ENV['MPESA_B2C_SHORTCODE'], // Cast to integer as per sandbox
+        'PartyB' => $normalized_phone,
         'Remarks' => $remarks,
         'QueueTimeOutURL' => $_ENV['MPESA_TIMEOUT_URL'],
         'ResultURL' => $_ENV['MPESA_RESULT_URL'],
         'Occasion' => 'Looma Withdrawal'
     ];
+    
+    // Log the payload for debugging
+    error_log("initiateB2C - Payload: " . json_encode($payload, JSON_PRETTY_PRINT));
     
     $curl = curl_init();
     curl_setopt_array($curl, [
@@ -343,8 +361,11 @@ function initiateB2C($access_token, $amount, $phone, $remarks) {
     $error = curl_error($curl);
     curl_close($curl);
     
+    // Log the full response for debugging
+    error_log("initiateB2C - HTTP Code: $http_code, Error: $error, Response: " . ($response ?: 'Empty response'));
+    
     if ($http_code !== 200 || $error) {
-        throw new Exception('B2C request failed: ' . ($error ?: 'HTTP ' . $http_code));
+        throw new Exception('B2C request failed: HTTP ' . $http_code . ', Error: ' . $error . ', Response: ' . ($response ?: 'Empty response'));
     }
     
     $data = json_decode($response, true);
@@ -352,6 +373,8 @@ function initiateB2C($access_token, $amount, $phone, $remarks) {
         throw new Exception('B2C error: ' . $data['errorMessage']);
     }
     
+    // Include OriginatorConversationID in the response for tracking
+    $data['OriginatorConversationID'] = $originator_conversation_id;
     return $data;
 }
 
