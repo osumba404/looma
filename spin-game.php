@@ -478,6 +478,9 @@ if (count($name_parts) >= 1) {
             const angle = (2 * Math.PI) / numSegments;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Multiplier labels for each segment
+            const multiplierLabels = ['x2', 'x3', 'x1', 'x4', 'x6', 'x0'];
+
             for (let i = 0; i < numSegments; i++) {
                 ctx.beginPath();
                 ctx.moveTo(150, 150);
@@ -488,14 +491,14 @@ if (count($name_parts) >= 1) {
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Draw reward text
+                // Draw multiplier label
                 ctx.save();
                 ctx.translate(150, 150);
                 ctx.rotate(i * angle + angle / 2);
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 14px Poppins';
+                ctx.font = 'bold 18px Poppins';
                 ctx.textAlign = 'center';
-                ctx.fillText(`Ksh ${rewards[i]}`, 100, 0);
+                ctx.fillText(multiplierLabels[i] || '', 100, 0);
                 ctx.restore();
             }
         }
