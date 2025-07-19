@@ -57,6 +57,16 @@ try {
             $initials .= strtoupper(substr($name_parts[1], 0, 1));
         }
     }
+
+    // Normalize phone number for display and backend (always 2547XXXXXXXX)
+    $user_phone = $user['phone'] ?? '';
+    if (preg_match('/^\+2547[0-9]{8}$/', $user_phone)) {
+        $normalized_phone = substr($user_phone, 1); // Remove '+'
+    } elseif (preg_match('/^2547[0-9]{8}$/', $user_phone)) {
+        $normalized_phone = $user_phone;
+    } else {
+        $normalized_phone = '';
+    }
 } catch (Exception $e) {
     error_log('Error in deposit.php: ' . $e->getMessage());
     $error = '<script>alert("' . htmlspecialchars($e->getMessage()) . '");</script>';
@@ -182,8 +192,8 @@ try {
                             </div>
                             <div class="mb-3">
                                 <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
-                                <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" readonly required>
-                                <small class="form-text text-muted">Phone number from your account</small>
+                                <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($normalized_phone); ?>" readonly required>
+                                <small class="form-text text-muted">Phone number from your account (format: 2547XXXXXXXX)</small>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Submit Deposit</button>
                         </form>

@@ -120,6 +120,17 @@ try {
         $amount = floatval($_POST['amount']);
         $phone = trim($_POST['phone']);
 
+        // Accept both +2547XXXXXXXX and 2547XXXXXXXX, but always use 2547XXXXXXXX for API
+        if (preg_match('/^\+2547[0-9]{8}$/', $phone)) {
+            $normalized_phone = substr($phone, 1); // Remove '+'
+        } elseif (preg_match('/^2547[0-9]{8}$/', $phone)) {
+            $normalized_phone = $phone;
+        } else {
+            $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX or 2547XXXXXXXX (e.g., +254712345678)';
+            echo json_encode($response);
+            exit();
+        }
+
         if (isset($_POST['deposit'])) {
             // Validation
             if ($amount < 100) {
@@ -127,15 +138,10 @@ try {
                 echo json_encode($response);
                 exit();
             }
-            if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX (e.g., +254712345678)';
-                echo json_encode($response);
-                exit();
-            }
 
             // Initiate C2B STK Push
             $access_token = getAccessToken();
-            $stk_response = initiateSTKPush($access_token, $amount, $phone, 'Deposit to Looma');
+            $stk_response = initiateSTKPush($access_token, $amount, $normalized_phone, 'Deposit to Looma');
 
             if ($stk_response['ResponseCode'] === '0') {
                 // Insert transaction as pending
@@ -169,15 +175,10 @@ try {
                 echo json_encode($response);
                 exit();
             }
-            if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-                $response['message'] = 'Invalid phone number. Use format: +2547XXXXXXXX (e.g., +254712345678)';
-                echo json_encode($response);
-                exit();
-            }
 
             // Initiate B2C transaction
             $access_token = getAccessToken();
-            $b2c_response = initiateB2C($access_token, $amount, $phone, 'Withdrawal from Looma');
+            $b2c_response = initiateB2C($access_token, $amount, $normalized_phone, 'Withdrawal from Looma');
 
             if ($b2c_response['ResponseCode'] === '0') {
                 // Insert transaction as pending (no balance deduction yet)
@@ -254,18 +255,18 @@ function initiateSTKPush($access_token, $amount, $phone, $description) {
     $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
            $_ENV['MPESA_SANDBOX_URL'] . '/mpesa/stkpush/v1/processrequest' : 
            $_ENV['MPESA_PRODUCTION_URL'] . '/mpesa/stkpush/v1/processrequest';
-    
+
     $timestamp = date('YmdHis');
     $password = base64_encode($_ENV['MPESA_C2B_SHORTCODE'] . $_ENV['MPESA_PASSKEY'] . $timestamp);
-    
+
     // Log the raw input phone number for debugging
     error_log("initiateSTKPush - Raw Input Phone: $phone");
-    
-    // Validate phone number (already in database format)
-    if (!preg_match('/^\+2547[0-9]{8}$/', $phone)) {
-        throw new Exception('Invalid phone number format: ' . $phone . '. Expected format: +2547XXXXXXXX (e.g., +254712345678)');
+
+    // Phone should be in 2547XXXXXXXX format for M-Pesa API
+    if (!preg_match('/^2547[0-9]{8}$/', $phone)) {
+        throw new Exception('Invalid phone number format for M-Pesa: ' . $phone . '. Expected format: 2547XXXXXXXX (e.g., 254712345678)');
     }
-    $normalized_phone = $phone; // Use as-is since it matches the expected format
+    $normalized_phone = $phone;
     error_log("initiateSTKPush - Normalized Phone: $normalized_phone");
 
     $payload = [
@@ -322,19 +323,14 @@ function initiateB2C($access_token, $amount, $phone, $remarks) {
     $url = $_ENV['MPESA_ENVIRONMENT'] === 'sandbox' ? 
            $_ENV['MPESA_SANDBOX_URL'] . '/mpesa/b2c/v3/paymentrequest' : 
            $_ENV['MPESA_PRODUCTION_URL'] . '/mpesa/b2c/v3/paymentrequest';
-    
-    $originator_conversation_id = uniqid(); // Generate a unique ID for each transaction
-    
-    // Normalize phone number for PartyB (remove + prefix to match sandbox format)
-    $normalized_phone = preg_replace('/^\+/', '', $phone); // Convert +2547XX to 2547XX
-    if (!preg_match('/^2547[0-9]{8}$/', $normalized_phone)) {
-        throw new Exception('Invalid phone number format for B2C: ' . $normalized_phone . '. Expected format: 2547XXXXXXXX');
-    }
 
-    // Validate required environment variables
-    if (empty($_ENV['MPESA_INITIATOR_NAME']) || empty($_ENV['MPESA_SECURITY_CREDENTIAL']) || empty($_ENV['MPESA_B2C_SHORTCODE'])) {
-        throw new Exception('Missing or invalid M-Pesa configuration in .env');
+    $originator_conversation_id = uniqid(); // Generate a unique ID for each transaction
+
+    // Phone should be in 2547XXXXXXXX format for B2C
+    if (!preg_match('/^2547[0-9]{8}$/', $phone)) {
+        throw new Exception('Invalid phone number format for B2C: ' . $phone . '. Expected format: 2547XXXXXXXX');
     }
+    $normalized_phone = $phone;
 
     $payload = [
         'OriginatorConversationID' => $originator_conversation_id,
