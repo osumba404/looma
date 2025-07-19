@@ -193,7 +193,7 @@ try {
                             <div class="mb-3">
                                 <label for="deposit_phone" class="form-label">M-Pesa Phone Number</label>
                                 <input type="text" class="form-control" id="deposit_phone" name="phone" value="<?php echo htmlspecialchars($normalized_phone); ?>" readonly required>
-                                <small class="form-text text-muted">Phone number from your account (format: 2547XXXXXXXX)</small>
+                                <small class="form-text text-muted">Phone number from your account</small>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Submit Deposit</button>
                         </form>
