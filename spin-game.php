@@ -112,7 +112,8 @@ try {
             }
 
             // Select random reward
-            $win_amount = $rewards[array_rand($rewards)];
+            $win_index = array_rand($rewards);
+            $win_amount = $rewards[$win_index];
 
             // Update wallet with win amount
             $stmt = $conn->prepare('UPDATE wallet SET balance = balance + ?, last_interact = CURRENT_TIMESTAMP WHERE user_id = ?');
@@ -149,8 +150,12 @@ try {
             // Commit transaction
             $conn->commit();
 
-            // Pass win amount to JavaScript for wheel animation and pop-up
-            $result = '<script>const spinResult = ' . json_encode(['amount' => $win_amount, 'rewards' => $rewards]) . ';</script>';
+            // Pass win amount and index to JavaScript for wheel animation and pop-up
+            $result = '<script>const spinResult = ' . json_encode([
+                'amount' => $win_amount,
+                'rewards' => $rewards,
+                'winIndex' => $win_index
+            ]) . ';</script>';
         } else {
             $conn->rollback();
         }
@@ -545,36 +550,38 @@ if (count($name_parts) >= 1) {
             .then(response => response.text())
             .then(data => {
                 // Extract spinResult from response
-                let spinResult = { amount: 0, rewards: currentRewards };
+                let spinResult = { amount: 0, rewards: currentRewards, winIndex: 0 };
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data, 'text/html');
                 const script = doc.querySelector('script:not([src])');
                 if (script) {
                     const scriptContent = script.textContent;
-                    const match = scriptContent.match(/const spinResult = ({.*});/);
+                    const match = scriptContent.match(/const spinResult = (.*);/);
                     if (match) {
                         spinResult = JSON.parse(match[1]);
                     }
                 }
 
-                console.log('spinResult:', spinResult); // Debug output
-
-                // Calculate rotation to land on the winning reward's center
+                // Calculate rotation so the pointer lands at the center of the winning segment
                 const numSegments = spinResult.rewards.length;
                 const anglePerSegment = 360 / numSegments;
-                const winIndex = spinResult.rewards.indexOf(spinResult.amount);
-                // Adjust targetAngle to point to the center of the winning segment
-                const targetAngle = (winIndex * anglePerSegment); // Start of the winning segment
-                const totalRotation = 360 * 5 + targetAngle + (anglePerSegment / 2); // 5 full spins + center of segment
+                const winIndex = spinResult.winIndex ?? spinResult.rewards.indexOf(spinResult.amount);
+                // Center of the segment (pointer is at 0deg/top)
+                const segmentCenter = winIndex * anglePerSegment + anglePerSegment / 2;
+                // Add a small random offset within the segment for realism
+                const minOffset = -anglePerSegment / 4, maxOffset = anglePerSegment / 4;
+                const randomOffset = Math.random() * (maxOffset - minOffset) + minOffset;
+                // Final angle to rotate so that the winning segment's center aligns with the pointer
+                const targetAngle = 360 * 5 + (360 - (segmentCenter + randomOffset));
 
-                canvas.style.transition = 'transform 4s ease-out';
-                canvas.style.transform = `rotate(${totalRotation}deg)`;
+                canvas.style.transition = 'transform 4s cubic-bezier(0.33, 1, 0.68, 1)';
+                canvas.style.transform = `rotate(${targetAngle}deg)`;
 
                 setTimeout(() => {
                     isSpinning = false;
                     spinBtn.disabled = false;
                     canvas.style.transition = 'none';
-                    canvas.style.transform = `rotate(${totalRotation % 360}deg)`;
+                    canvas.style.transform = `rotate(${targetAngle % 360}deg)`;
 
                     // Show pop-up with win amount
                     const winModal = new bootstrap.Modal(document.getElementById('winModal'));
